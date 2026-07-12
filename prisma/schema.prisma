@@ -1,13 +1,139 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
+}
+
+model WorkspaceSettings {
+  id             String   @id @default(cuid())
+  displayName    String   @default("Big Devon")
+  roleTitle      String   @default("Communications Intelligence Lead")
+  organization   String   @default("DevonOS")
+  defaultTone    String   @default("Premium")
+  defaultMode    String   @default("Work")
+  signature      String   @default("Big Devon")
+  brandDirection String   @default("")
+  designRules    String   @default("")
+  writingRules   String   @default("")
+  postingRules   String   @default("")
+  systemNotes    String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model NewsItem {
+  id        String   @id @default(cuid())
+  headline  String
+  source    String   @default("")
+  url       String   @default("")
+  summary   String   @default("")
+  relevance String   @default("Medium")
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model KpiItem {
+  id          String   @id @default(cuid())
+  title       String
+  owner       String   @default("")
+  status      String   @default("Not Started")
+  priority    String   @default("Medium")
+  dueDate     String   @default("")
+  description String   @default("")
+  outcome     String   @default("")
+  notes       String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SocialDraft {
+  id              String   @id @default(cuid())
+  title           String
+  campaign        String   @default("")
+  platform        String   @default("Instagram")
+  status          String   @default("Draft")
+  scheduledDate   String   @default("")
+  caption         String   @default("")
+  visualDirection String   @default("")
+  hashtags        String   @default("")
+  notes           String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AssetRecord {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   @default("Document")
+  project   String   @default("")
+  status    String   @default("Raw")
+  priority  String   @default("Medium")
+  link      String   @default("")
+  tags      String   @default("")
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GlobalEvent {
+  id              String   @id @default(cuid())
+  title           String
+  date            String   @default("")
+  category        String   @default("Global Observance")
+  relevance       String   @default("Medium")
+  status          String   @default("Idea")
+  contentAngle    String   @default("")
+  visualDirection String   @default("")
+  captionDraft    String   @default("")
+  notes           String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model BirthdayProfile {
+  id            String   @id @default(cuid())
+  name          String
+  role          String   @default("")
+  category      String   @default("")
+  month         Int      @default(1)
+  day           Int      @default(1)
+  photoUrl      String   @default("")
+  notes         String   @default("")
+  preferredTone String   @default("Warm")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AiDraft {
+  id          String   @id @default(cuid())
+  title       String
+  category    String   @default("Caption")
+  tone        String   @default("Premium")
+  status      String   @default("Draft")
+  instruction String   @default("")
+  sourceText  String   @default("")
+  output      String   @default("")
+  notes       String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ProjectRecord {
+  id           String   @id @default(cuid())
+  name         String
+  owner        String   @default("")
+  category     String   @default("")
+  status       String   @default("Planning")
+  priority     String   @default("High")
+  startDate    String   @default("")
+  dueDate      String   @default("")
+  objective    String   @default("")
+  deliverables String   @default("")
+  notes        String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
