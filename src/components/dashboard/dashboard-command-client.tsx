@@ -1,762 +1,655 @@
 "use client";
 
-import Link from "next/link";
 import type { ElementType } from "react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import {
+  AlertCircle,
+  AlertTriangle,
   ArrowUpRight,
-  BarChart3,
   Bot,
   Briefcase,
   CalendarDays,
   CheckCircle2,
+  Clipboard,
   Clock,
+  Copy,
   Crown,
+  Database,
   FileText,
   Folder,
   Newspaper,
+  Radio,
   RefreshCcw,
-  Share2,
+  Rocket,
+  Send,
+  ShieldCheck,
   Sparkles,
   Target,
   Users,
   Zap,
 } from "lucide-react";
 
-type DashboardMetrics = {
+type SignalSeverity = "critical" | "high" | "medium" | "low";
+
+type CommandSignal = {
+  id: string;
+  module: string;
+  title: string;
+  detail: string;
+  severity: SignalSeverity;
+  href: string;
+  action: string;
+  sortScore: number;
+};
+
+type AutopilotCounts = {
   kpis: number;
-  completedKpis: number;
-  delayedKpis: number;
-  criticalKpis: number;
+  projects: number;
   socialDrafts: number;
-  socialReview: number;
-  socialApproved: number;
-  socialPosted: number;
   assets: number;
-  readyAssets: number;
   events: number;
-  upcomingEvents: number;
   birthdays: number;
   aiDrafts: number;
-  generatedAi: number;
-  projects: number;
-  activeProjects: number;
-  criticalProjects: number;
+  newsItems: number;
+  signals: number;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
 };
 
-type ActivityItem = {
-  id: string;
-  title: string;
-  module: string;
-  status: string;
-  href: string;
-  date: string;
-  body: string;
+type AutopilotResponse = {
+  ok: boolean;
+  generatedAt: string;
+  health: "critical" | "attention" | "stable";
+  counts: AutopilotCounts;
+  signals: CommandSignal[];
+  topSignals: CommandSignal[];
+  briefText: string;
+  message?: string;
 };
 
-const STORAGE_KEYS = {
-  kpis: "devonos.kpis.v1",
-  social: "devonos.social-drafts.v1",
-  assets: "devonos.assets.v1",
-  events: "devonos.global-events.v1",
-  birthdays: "devonos.birthdays.v1",
-  ai: "devonos.ai-studio.v1",
-  projects: "devonos.projects.v1",
-};
-
-const emptyMetrics: DashboardMetrics = {
+const emptyCounts: AutopilotCounts = {
   kpis: 0,
-  completedKpis: 0,
-  delayedKpis: 0,
-  criticalKpis: 0,
+  projects: 0,
   socialDrafts: 0,
-  socialReview: 0,
-  socialApproved: 0,
-  socialPosted: 0,
   assets: 0,
-  readyAssets: 0,
   events: 0,
-  upcomingEvents: 0,
   birthdays: 0,
   aiDrafts: 0,
-  generatedAi: 0,
-  projects: 0,
-  activeProjects: 0,
-  criticalProjects: 0,
+  newsItems: 0,
+  signals: 0,
+  critical: 0,
+  high: 0,
+  medium: 0,
+  low: 0,
 };
 
-function safeReadArray(key: string): Record<string, unknown>[] {
-  try {
-    const stored = localStorage.getItem(key);
-    if (!stored) return [];
-
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function stringValue(value: unknown) {
-  if (typeof value === "string") return value;
-  if (typeof value === "number") return String(value);
-  if (typeof value === "boolean") return String(value);
-  return "";
-}
-
-function pickString(item: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = stringValue(item[key]);
-    if (value.trim()) return value.trim();
-  }
-
-  return "";
-}
-
-function todayStart() {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
-function getDaysUntil(dateString: string) {
-  if (!dateString) return 999999;
-
-  const today = todayStart();
-  const date = new Date(dateString);
-  date.setHours(0, 0, 0, 0);
-
-  if (Number.isNaN(date.getTime())) return 999999;
-
-  const diff = date.getTime() - today.getTime();
-  return Math.round(diff / (1000 * 60 * 60 * 24));
-}
-
-function formatDate(dateString: string) {
-  if (!dateString) return "No date";
+function formatDateTime(dateString: string) {
+  if (!dateString) return "Not generated yet";
 
   const date = new Date(dateString);
 
-  if (Number.isNaN(date.getTime())) return "No date";
+  if (Number.isNaN(date.getTime())) return "Not generated yet";
 
   return new Intl.DateTimeFormat("en-NG", {
+    weekday: "long",
     day: "numeric",
-    month: "short",
+    month: "long",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(date);
 }
 
-function buildMetrics(): DashboardMetrics {
-  const kpis = safeReadArray(STORAGE_KEYS.kpis);
-  const social = safeReadArray(STORAGE_KEYS.social);
-  const assets = safeReadArray(STORAGE_KEYS.assets);
-  const events = safeReadArray(STORAGE_KEYS.events);
-  const birthdays = safeReadArray(STORAGE_KEYS.birthdays);
-  const ai = safeReadArray(STORAGE_KEYS.ai);
-  const projects = safeReadArray(STORAGE_KEYS.projects);
+function healthCopy(health: AutopilotResponse["health"] | undefined) {
+  if (health === "critical") {
+    return {
+      label: "Critical",
+      title: "DevonOS found urgent issues",
+      text: "There are critical signals that need immediate attention before they become serious blockers.",
+      className: "from-red-500 to-pink-500",
+      chip: "border-red-100 bg-red-50 text-red-600",
+      icon: AlertTriangle,
+    };
+  }
+
+  if (health === "attention") {
+    return {
+      label: "Attention",
+      title: "DevonOS has work for you",
+      text: "There are active signals that need review, follow-up, approval, or preparation.",
+      className: "from-blue-600 to-violet-600",
+      chip: "border-blue-100 bg-blue-50 text-blue-600",
+      icon: Zap,
+    };
+  }
 
   return {
-    kpis: kpis.length,
-    completedKpis: kpis.filter((item) => item.status === "Completed").length,
-    delayedKpis: kpis.filter((item) => item.status === "Delayed").length,
-    criticalKpis: kpis.filter((item) => item.priority === "Critical").length,
-
-    socialDrafts: social.length,
-    socialReview: social.filter((item) => item.status === "Review").length,
-    socialApproved: social.filter((item) => item.status === "Approved").length,
-    socialPosted: social.filter((item) => item.status === "Posted").length,
-
-    assets: assets.length,
-    readyAssets: assets.filter(
-      (item) => item.status === "Ready" || item.status === "Approved"
-    ).length,
-
-    events: events.length,
-    upcomingEvents: events.filter((item) => {
-      const days = getDaysUntil(pickString(item, ["date"]));
-      return days >= 0 && days <= 30;
-    }).length,
-
-    birthdays: birthdays.length,
-
-    aiDrafts: ai.length,
-    generatedAi: ai.filter((item) => item.status === "Generated").length,
-
-    projects: projects.length,
-    activeProjects: projects.filter(
-      (item) =>
-        item.status === "Planning" ||
-        item.status === "In Progress" ||
-        item.status === "Review"
-    ).length,
-    criticalProjects: projects.filter((item) => item.priority === "Critical")
-      .length,
+    label: "Stable",
+    title: "Command center is calm",
+    text: "No urgent pressure detected. This is a good time to prepare, polish, and get ahead.",
+    className: "from-cyan-500 to-blue-600",
+    chip: "border-cyan-100 bg-cyan-50 text-cyan-600",
+    icon: ShieldCheck,
   };
 }
 
-function buildRecentActivity(): ActivityItem[] {
-  const kpis = safeReadArray(STORAGE_KEYS.kpis).map((item, index) => ({
-    id: `kpi-${pickString(item, ["id"]) || index}`,
-    title: pickString(item, ["title", "name", "objective"]) || "KPI Item",
-    module: "KPI Command",
-    status: pickString(item, ["status"]) || "Tracked",
-    href: "/kpi",
-    date: pickString(item, ["createdAt", "dueDate", "date"]),
-    body: pickString(item, ["description", "notes", "outcome"]) || "",
-  }));
-
-  const social = safeReadArray(STORAGE_KEYS.social).map((item, index) => ({
-    id: `social-${pickString(item, ["id"]) || index}`,
-    title: pickString(item, ["title", "campaign"]) || "Social Draft",
-    module: "Social Studio",
-    status: pickString(item, ["status"]) || "Draft",
-    href: "/social",
-    date: pickString(item, ["createdAt", "scheduledDate"]),
-    body: pickString(item, ["caption", "visualDirection", "notes"]) || "",
-  }));
-
-  const assets = safeReadArray(STORAGE_KEYS.assets).map((item, index) => ({
-    id: `asset-${pickString(item, ["id"]) || index}`,
-    title: pickString(item, ["name", "title"]) || "Asset Record",
-    module: "Asset Library",
-    status: pickString(item, ["status"]) || "Saved",
-    href: "/assets",
-    date: pickString(item, ["createdAt"]),
-    body: pickString(item, ["notes", "tags", "project"]) || "",
-  }));
-
-  const events = safeReadArray(STORAGE_KEYS.events).map((item, index) => ({
-    id: `event-${pickString(item, ["id"]) || index}`,
-    title: pickString(item, ["title", "name"]) || "Event",
-    module: "Events",
-    status: pickString(item, ["status"]) || "Saved",
-    href: "/events",
-    date: pickString(item, ["createdAt", "date"]),
-    body:
-      pickString(item, [
-        "contentAngle",
-        "visualDirection",
-        "captionDraft",
-        "notes",
-      ]) || "",
-  }));
-
-  const ai = safeReadArray(STORAGE_KEYS.ai).map((item, index) => ({
-    id: `ai-${pickString(item, ["id"]) || index}`,
-    title: pickString(item, ["title", "name"]) || "AI Draft",
-    module: "AI Studio",
-    status: pickString(item, ["status"]) || "Generated",
-    href: "/ai",
-    date: pickString(item, ["createdAt"]),
-    body: pickString(item, ["output", "instruction", "sourceText"]) || "",
-  }));
-
-  const projects = safeReadArray(STORAGE_KEYS.projects).map((item, index) => ({
-    id: `project-${pickString(item, ["id"]) || index}`,
-    title: pickString(item, ["name", "title"]) || "Project",
-    module: "Projects Command",
-    status: pickString(item, ["status"]) || "Planning",
-    href: "/projects",
-    date: pickString(item, ["createdAt", "dueDate"]),
-    body: pickString(item, ["objective", "deliverables", "notes"]) || "",
-  }));
-
-  return [...kpis, ...social, ...assets, ...events, ...ai, ...projects]
-    .sort((a, b) => {
-      const aTime = new Date(a.date).getTime();
-      const bTime = new Date(b.date).getTime();
-
-      if (Number.isNaN(aTime) && Number.isNaN(bTime)) return 0;
-      if (Number.isNaN(aTime)) return 1;
-      if (Number.isNaN(bTime)) return -1;
-
-      return bTime - aTime;
-    })
-    .slice(0, 8);
-}
-
-function getCommandHealth(metrics: DashboardMetrics) {
-  const total =
-    metrics.kpis +
-    metrics.socialDrafts +
-    metrics.assets +
-    metrics.events +
-    metrics.birthdays +
-    metrics.aiDrafts +
-    metrics.projects;
-
-  if (total === 0) return 0;
-
-  const positive =
-    metrics.completedKpis +
-    metrics.socialApproved +
-    metrics.socialPosted +
-    metrics.readyAssets +
-    metrics.upcomingEvents +
-    metrics.generatedAi +
-    metrics.activeProjects;
-
-  return Math.min(100, Math.round((positive / Math.max(total, 1)) * 100));
-}
-
-function moduleClass(module: string) {
-  if (module.includes("KPI")) {
-    return "border-[#5B5DF5]/15 bg-[#EEF2FF] text-[#5B5DF5]";
+function severityClass(severity: SignalSeverity) {
+  if (severity === "critical") {
+    return "border-red-100 bg-red-50 text-red-600";
   }
 
-  if (module.includes("Social")) {
-    return "border-pink-100 bg-pink-50 text-pink-600";
-  }
-
-  if (module.includes("Asset")) {
-    return "border-[#D8B76A]/25 bg-[#FFF8E1] text-[#8A6B22]";
-  }
-
-  if (module.includes("Events")) {
+  if (severity === "high") {
     return "border-blue-100 bg-blue-50 text-blue-600";
   }
 
-  if (module.includes("AI")) {
-    return "border-slate-200 bg-slate-100 text-slate-600";
+  if (severity === "medium") {
+    return "border-violet-100 bg-violet-50 text-violet-600";
   }
 
-  return "border-red-100 bg-red-50 text-red-600";
+  return "border-slate-200 bg-slate-100 text-slate-500";
+}
+
+function severityDot(severity: SignalSeverity) {
+  if (severity === "critical") return "bg-red-500";
+  if (severity === "high") return "bg-blue-600";
+  if (severity === "medium") return "bg-violet-500";
+  return "bg-slate-400";
+}
+
+function moduleIcon(module: string): ElementType {
+  const lower = module.toLowerCase();
+
+  if (lower.includes("kpi")) return Target;
+  if (lower.includes("project")) return Briefcase;
+  if (lower.includes("social")) return Send;
+  if (lower.includes("asset")) return Folder;
+  if (lower.includes("event")) return CalendarDays;
+  if (lower.includes("birthday")) return Users;
+  if (lower.includes("ai")) return Bot;
+  if (lower.includes("news")) return Newspaper;
+
+  return Sparkles;
 }
 
 export function DashboardCommandClient() {
-  const [metrics, setMetrics] = useState<DashboardMetrics>(emptyMetrics);
-  const [activity, setActivity] = useState<ActivityItem[]>([]);
-  const [lastRefresh, setLastRefresh] = useState("");
+  const [data, setData] = useState<AutopilotResponse | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  function refreshDashboard() {
-    setMetrics(buildMetrics());
-    setActivity(buildRecentActivity());
+  async function loadAutopilotBrief() {
+    try {
+      setRefreshing(true);
+      setErrorMessage("");
 
-    setLastRefresh(
-      new Intl.DateTimeFormat("en-NG", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }).format(new Date())
-    );
+      const response = await fetch("/api/autopilot/brief", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error("Autopilot brief failed.");
+      }
+
+      const result = (await response.json()) as AutopilotResponse;
+
+      if (!result.ok) {
+        throw new Error(result.message || "Autopilot response was invalid.");
+      }
+
+      setData(result);
+    } catch (error) {
+      console.error("Failed to load autopilot brief:", error);
+      setErrorMessage("DevonOS Autopilot could not load the command brief.");
+    } finally {
+      setLoaded(true);
+      setRefreshing(false);
+    }
   }
 
   useEffect(() => {
-    refreshDashboard();
+    loadAutopilotBrief();
   }, []);
 
-  const commandHealth = getCommandHealth(metrics);
+  const counts = data?.counts ?? emptyCounts;
+  const health = healthCopy(data?.health);
+  const HealthIcon = health.icon;
 
-  const totalRecords = useMemo(() => {
-    return (
-      metrics.kpis +
-      metrics.socialDrafts +
-      metrics.assets +
-      metrics.events +
-      metrics.birthdays +
-      metrics.aiDrafts +
-      metrics.projects
-    );
-  }, [metrics]);
+  const topSignals = data?.topSignals ?? [];
+  const allSignals = data?.signals ?? [];
 
-  const focusItems = [
-    {
-      title: "Delayed KPI items",
-      value: metrics.delayedKpis,
-      note: "Review blockers and update execution status.",
-      href: "/kpi",
-      icon: Target,
-    },
-    {
-      title: "Critical projects",
-      value: metrics.criticalProjects,
-      note: "Prioritize major workstreams that matter most.",
-      href: "/projects",
-      icon: Briefcase,
-    },
-    {
-      title: "Posts in review",
-      value: metrics.socialReview,
-      note: "Move drafts toward approval or posting.",
-      href: "/social",
-      icon: Share2,
-    },
-    {
-      title: "Upcoming events",
-      value: metrics.upcomingEvents,
-      note: "Prepare content before the date arrives.",
-      href: "/events",
-      icon: CalendarDays,
-    },
-  ];
+  const moduleCards = useMemo(
+    () => [
+      {
+        title: "KPIs",
+        value: counts.kpis,
+        sub: "tracked outcomes",
+        icon: Target,
+        href: "/kpi",
+        tone: "blue",
+      },
+      {
+        title: "Projects",
+        value: counts.projects,
+        sub: "workstreams",
+        icon: Briefcase,
+        href: "/projects",
+        tone: "violet",
+      },
+      {
+        title: "Social",
+        value: counts.socialDrafts,
+        sub: "drafts",
+        icon: Send,
+        href: "/social",
+        tone: "cyan",
+      },
+      {
+        title: "Assets",
+        value: counts.assets,
+        sub: "records",
+        icon: Folder,
+        href: "/assets",
+        tone: "pink",
+      },
+      {
+        title: "Events",
+        value: counts.events,
+        sub: "moments",
+        icon: CalendarDays,
+        href: "/events",
+        tone: "amber",
+      },
+      {
+        title: "Birthdays",
+        value: counts.birthdays,
+        sub: "profiles",
+        icon: Users,
+        href: "/birthdays",
+        tone: "blue",
+      },
+      {
+        title: "AI Studio",
+        value: counts.aiDrafts,
+        sub: "drafts",
+        icon: Bot,
+        href: "/ai",
+        tone: "violet",
+      },
+      {
+        title: "News",
+        value: counts.newsItems,
+        sub: "signals",
+        icon: Newspaper,
+        href: "/news/collector",
+        tone: "cyan",
+      },
+    ],
+    [counts]
+  );
+
+  async function copyBrief() {
+    if (!data?.briefText) return;
+
+    await navigator.clipboard.writeText(data.briefText);
+    setCopied(true);
+
+    window.setTimeout(() => {
+      setCopied(false);
+    }, 1600);
+  }
 
   return (
-    <div className="space-y-5">
-      <div className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
-        <div className="devon-glass devon-card-shine rounded-[2.6rem] p-6 md:p-8">
-          <div className="mb-6 flex flex-col justify-between gap-5 md:flex-row md:items-start">
-            <div>
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-950/[0.08] bg-white/70 px-4 py-2 text-xs font-semibold text-slate-600 shadow-[0_12px_40px_rgba(15,23,42,0.045)]">
-                <Crown size={14} className="text-[#5B5DF5]" />
-                DevonOS Command Center
+    <div className="space-y-6">
+      <section className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+        <motion.div
+          initial={{ opacity: 0, y: 22, filter: "blur(10px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          className="devon-v2-dark-card rounded-[2.75rem] p-7 text-white md:p-9"
+        >
+          <div className="relative z-10">
+            <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-start">
+              <div>
+                <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.2em] text-white/55 backdrop-blur-xl">
+                  <Crown size={14} className="text-blue-200" />
+                  Autopilot Command Brief
+                </div>
+
+                <h1 className="devon-v2-premium-heading max-w-3xl text-5xl text-white md:text-7xl">
+                  DevonOS is watching the work.
+                </h1>
+
+                <p className="mt-6 max-w-2xl text-base font-medium leading-8 text-white/62 md:text-lg">
+                  It reads your database, detects pressure points, and tells you
+                  what needs action before your day gets messy.
+                </p>
               </div>
 
-              <h1 className="max-w-5xl text-4xl font-semibold tracking-[-0.06em] md:text-6xl">
-                <span className="devon-text-gradient">
-                  Your live command room is online.
-                </span>
-              </h1>
-
-              <p className="mt-5 max-w-3xl text-sm leading-7 text-slate-500 md:text-base">
-                This dashboard now reads live records from your DevonOS modules
-                and gives you one clean overview of work, content, assets,
-                deadlines, and command health.
-              </p>
-            </div>
-
-            <button
-              onClick={refreshDashboard}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0B0D12] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_55px_rgba(15,23,42,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#171A23]"
-            >
-              <RefreshCcw size={16} />
-              Refresh Dashboard
-            </button>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-4">
-            <HeroMetric title="Total Records" value={totalRecords} />
-            <HeroMetric title="Command Health" value={`${commandHealth}%`} />
-            <HeroMetric title="Active Projects" value={metrics.activeProjects} />
-            <HeroMetric title="Upcoming Events" value={metrics.upcomingEvents} />
-          </div>
-
-          <p className="mt-5 text-xs font-medium text-slate-400">
-            Last refreshed: {lastRefresh || "Not refreshed yet"}
-          </p>
-        </div>
-
-        <div className="devon-glass-dark devon-ink-shine rounded-[2.6rem] p-6 text-white">
-          <div className="mb-7 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#0B0D12] shadow-[0_22px_70px_rgba(255,255,255,0.18)]">
-            <Zap size={23} />
-          </div>
-
-          <p className="text-sm font-semibold uppercase tracking-[0.28em] text-white/38">
-            System Signal
-          </p>
-
-          <h2 className="mt-4 text-2xl font-semibold tracking-tight">
-            {commandHealth}% command health
-          </h2>
-
-          <p className="mt-3 text-sm leading-6 text-white/52">
-            The dashboard score increases as work becomes completed, approved,
-            posted, ready, or actively planned.
-          </p>
-
-          <div className="mt-7 rounded-[1.5rem] border border-white/10 bg-white/[0.055] p-4">
-            <div className="mb-3 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.18em] text-white/36">
-              <span>Readiness</span>
-              <span>{commandHealth}%</span>
-            </div>
-
-            <div className="h-3 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-white"
-                style={{ width: `${commandHealth}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          title="KPI Command"
-          value={metrics.kpis}
-          sub={`${metrics.completedKpis} completed · ${metrics.delayedKpis} delayed`}
-          icon={Target}
-          href="/kpi"
-        />
-        <MetricCard
-          title="Social Studio"
-          value={metrics.socialDrafts}
-          sub={`${metrics.socialReview} review · ${metrics.socialPosted} posted`}
-          icon={Share2}
-          href="/social"
-        />
-        <MetricCard
-          title="Asset Library"
-          value={metrics.assets}
-          sub={`${metrics.readyAssets} ready / approved`}
-          icon={Folder}
-          href="/assets"
-        />
-        <MetricCard
-          title="Projects"
-          value={metrics.projects}
-          sub={`${metrics.activeProjects} active · ${metrics.criticalProjects} critical`}
-          icon={Briefcase}
-          href="/projects"
-        />
-        <MetricCard
-          title="Events"
-          value={metrics.events}
-          sub={`${metrics.upcomingEvents} upcoming in 30 days`}
-          icon={CalendarDays}
-          href="/events"
-        />
-        <MetricCard
-          title="Birthdays"
-          value={metrics.birthdays}
-          sub="Saved internal profiles"
-          icon={Users}
-          href="/birthdays"
-        />
-        <MetricCard
-          title="AI Studio"
-          value={metrics.aiDrafts}
-          sub={`${metrics.generatedAi} generated drafts`}
-          icon={Bot}
-          href="/ai"
-        />
-        <MetricCard
-          title="Reports"
-          value={totalRecords}
-          sub="Copy-ready command summaries"
-          icon={BarChart3}
-          href="/reports"
-        />
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-        <div className="devon-glass rounded-[2.25rem] p-6">
-          <div className="mb-5 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#5B5DF5]">
-              <Sparkles size={19} />
-            </div>
-
-            <div>
-              <h2 className="text-xl font-semibold tracking-tight text-[#0B0D12]">
-                Focus Queue
-              </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                What needs your attention first.
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            {focusItems.map((item) => {
-              const Icon = item.icon;
-
-              return (
-                <Link
-                  key={item.title}
-                  href={item.href}
-                  className="group flex items-center justify-between gap-4 rounded-[1.5rem] border border-slate-950/[0.08] bg-white/66 p-4 shadow-[0_14px_45px_rgba(15,23,42,0.04)] transition duration-300 hover:bg-white"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950/[0.045] text-slate-600">
-                      <Icon size={18} />
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-semibold text-[#0B0D12]">
-                        {item.title}
-                      </p>
-                      <p className="mt-1 text-xs leading-5 text-slate-400">
-                        {item.note}
-                      </p>
-                    </div>
+              <div className="rounded-[2rem] border border-white/10 bg-white/[0.075] p-4 backdrop-blur-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="devon-v2-orb flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-blue-600">
+                    <HealthIcon size={22} />
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <p className="text-2xl font-semibold tracking-[-0.04em] text-[#0B0D12]">
-                      {item.value}
+                  <div>
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/35">
+                      System Health
                     </p>
-                    <ArrowUpRight
-                      size={16}
-                      className="text-slate-300 transition group-hover:text-[#0B0D12]"
-                    />
+                    <p className="mt-1 text-lg font-extrabold text-white">
+                      {health.label}
+                    </p>
                   </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+                </div>
+              </div>
+            </div>
 
-        <div className="devon-glass rounded-[2.25rem] p-6">
-          <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+            <div className="grid gap-3 md:grid-cols-4">
+              <HeroMetric value={counts.signals} label="Total Signals" />
+              <HeroMetric value={counts.critical} label="Critical" />
+              <HeroMetric value={counts.high} label="High Priority" />
+              <HeroMetric value={counts.medium} label="Medium" />
+            </div>
+
+            <div className="mt-7 flex flex-col gap-3 md:flex-row">
+              <button
+                onClick={loadAutopilotBrief}
+                disabled={refreshing}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-[#07111f] shadow-[0_18px_55px_rgba(255,255,255,0.15)] transition duration-300 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55"
+              >
+                <RefreshCcw size={16} className={refreshing ? "animate-spin" : ""} />
+                {refreshing ? "Refreshing..." : "Refresh Autopilot"}
+              </button>
+
+              <button
+                onClick={copyBrief}
+                disabled={!data?.briefText}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.075] px-5 py-3 text-sm font-extrabold text-white shadow-[0_18px_55px_rgba(0,0,0,0.12)] transition duration-300 hover:-translate-y-0.5 hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+                {copied ? "Copied" : "Copy Brief"}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 22, filter: "blur(10px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ delay: 0.1, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          className="devon-v2-glass rounded-[2.75rem] p-7"
+        >
+          <div className="mb-6 flex items-start justify-between gap-4">
             <div>
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-950/[0.08] bg-white/70 px-4 py-2 text-xs font-semibold text-slate-600 shadow-[0_12px_40px_rgba(15,23,42,0.045)]">
-                <Clock size={14} className="text-[#5B5DF5]" />
-                Recent Activity
+              <div className={`mb-4 inline-flex rounded-full border px-3 py-1.5 text-xs font-extrabold ${health.chip}`}>
+                {health.label}
               </div>
-
-              <h2 className="text-2xl font-semibold tracking-tight text-[#0B0D12]">
-                Latest saved records
-              </h2>
-
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Recent items from your browser-saved DevonOS modules.
+              <h2 className="text-3xl text-[#07111f]">{health.title}</h2>
+              <p className="mt-3 text-sm font-semibold leading-7 text-slate-500">
+                {health.text}
               </p>
             </div>
 
-            <Link
-              href="/search"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-950/[0.08] bg-white/80 px-5 py-3 text-sm font-semibold text-slate-700 shadow-[0_16px_50px_rgba(15,23,42,0.055)] transition duration-300 hover:-translate-y-0.5 hover:bg-white"
-            >
-              Search All
-              <ArrowUpRight size={16} />
-            </Link>
+            <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+              <Rocket size={22} />
+            </div>
           </div>
 
-          {activity.length === 0 ? (
-            <div className="rounded-[1.6rem] border border-dashed border-slate-950/[0.12] bg-white/55 p-8 text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#5B5DF5]">
-                <FileText size={20} />
-              </div>
-              <h3 className="text-base font-semibold text-[#0B0D12]">
-                No recent records yet
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Add records in your modules, then refresh the dashboard.
+          <div className="rounded-[2rem] border border-slate-950/[0.07] bg-white/70 p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-slate-400">
+                Last Scan
               </p>
+              <Database size={15} className="text-blue-600" />
             </div>
+
+            <p className="text-sm font-bold leading-7 text-slate-700">
+              {data?.generatedAt
+                ? formatDateTime(data.generatedAt)
+                : loaded
+                  ? "No scan generated yet"
+                  : "Loading scan..."}
+            </p>
+          </div>
+
+          {errorMessage ? (
+            <div className="mt-4 rounded-[1.5rem] border border-red-100 bg-red-50 p-4 text-red-600">
+              <div className="flex gap-3">
+                <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                <p className="text-sm font-semibold leading-6">{errorMessage}</p>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <MiniHealth value={counts.low} label="Low" />
+            <MiniHealth value={allSignals.length} label="All Signals" />
+          </div>
+        </motion.div>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+        <div className="devon-v2-glass rounded-[2.5rem] p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <p className="devon-v2-label text-blue-600">Priority Queue</p>
+              <h2 className="mt-2 text-3xl text-[#07111f]">What needs you now</h2>
+            </div>
+
+            <Radio size={22} className="text-blue-600" />
+          </div>
+
+          {!loaded ? (
+            <EmptyState
+              icon={RefreshCcw}
+              title="Loading Autopilot"
+              text="Reading your database and building the daily command queue."
+            />
+          ) : topSignals.length === 0 ? (
+            <EmptyState
+              icon={ShieldCheck}
+              title="No urgent signals"
+              text="Your command center is calm. Use this time to prepare and polish."
+            />
           ) : (
             <div className="space-y-3">
-              {activity.map((item) => (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className="block rounded-[1.55rem] border border-slate-950/[0.08] bg-white/66 p-4 shadow-[0_14px_45px_rgba(15,23,42,0.04)] transition duration-300 hover:bg-white"
-                >
-                  <div className="mb-3 flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="text-base font-semibold text-[#0B0D12]">
-                        {item.title}
-                      </h3>
-                      <p className="mt-1 text-sm font-medium text-slate-400">
-                        {item.module} · {formatDate(item.date)}
-                      </p>
-                    </div>
+              {topSignals.map((item, index) => {
+                const Icon = moduleIcon(item.module);
 
-                    <ArrowUpRight size={16} className="text-slate-300" />
-                  </div>
-
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    <span
-                      className={`rounded-full border px-3 py-1 text-xs font-semibold ${moduleClass(
-                        item.module
-                      )}`}
+                return (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      delay: 0.06 * index,
+                      duration: 0.42,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
+                  >
+                    <Link
+                      href={item.href}
+                      className="group block rounded-[1.7rem] border border-slate-950/[0.075] bg-white/66 p-4 shadow-[0_16px_48px_rgba(15,23,42,0.045)] transition duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-[0_24px_70px_rgba(37,99,235,0.11)]"
                     >
-                      {item.module}
-                    </span>
+                      <div className="flex gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EEF2FF] text-blue-600">
+                          <Icon size={19} />
+                        </div>
 
-                    <span className="rounded-full border border-slate-950/[0.08] bg-white px-3 py-1 text-xs font-semibold text-slate-500">
-                      {item.status}
-                    </span>
-                  </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-2 flex flex-wrap items-center gap-2">
+                            <span
+                              className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-extrabold uppercase ${severityClass(
+                                item.severity
+                              )}`}
+                            >
+                              {item.severity}
+                            </span>
+                            <span className="text-xs font-bold text-slate-400">
+                              {item.module}
+                            </span>
+                          </div>
 
-                  {item.body ? (
-                    <p className="line-clamp-2 text-sm leading-6 text-slate-500">
-                      {item.body}
-                    </p>
-                  ) : null}
-                </Link>
-              ))}
+                          <h3 className="text-base text-[#07111f]">
+                            {item.title}
+                          </h3>
+                          <p className="mt-2 line-clamp-2 text-sm font-medium leading-6 text-slate-500">
+                            {item.detail}
+                          </p>
+
+                          <div className="mt-3 flex items-center justify-between gap-3">
+                            <p className="line-clamp-1 text-xs font-bold text-blue-600">
+                              {item.action}
+                            </p>
+                            <ArrowUpRight
+                              size={16}
+                              className="shrink-0 text-slate-300 transition duration-300 group-hover:text-blue-600"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </div>
-      </div>
 
-      <div className="devon-glass rounded-[2.25rem] p-6">
-        <div className="mb-5 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#FFF8E1] text-[#8A6B22]">
-            <Newspaper size={19} />
+        <div className="devon-v2-glass rounded-[2.5rem] p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <p className="devon-v2-label text-violet-600">Daily Brief</p>
+              <h2 className="mt-2 text-3xl text-[#07111f]">
+                Autopilot summary
+              </h2>
+            </div>
+
+            <Clipboard size={22} className="text-violet-600" />
           </div>
 
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight text-[#0B0D12]">
-              Quick Launch
-            </h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Jump straight into your main command workflows.
-            </p>
+          <div className="rounded-[2rem] border border-slate-950/[0.075] bg-white/72 p-5">
+            <pre className="max-h-[640px] overflow-auto whitespace-pre-wrap font-sans text-sm font-medium leading-7 text-slate-700">
+              {data?.briefText ??
+                "DevonOS is preparing the daily command brief..."}
+            </pre>
           </div>
         </div>
+      </section>
 
-        <div className="grid gap-3 md:grid-cols-4">
-          <QuickLink title="News Collector" href="/news/collector" />
-          <QuickLink title="Social Studio" href="/social" />
-          <QuickLink title="Calendar" href="/calendar" />
-          <QuickLink title="Reports" href="/reports" />
-        </div>
-      </div>
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {moduleCards.map((item, index) => (
+          <ModuleCard key={item.title} {...item} index={index} />
+        ))}
+      </section>
     </div>
   );
 }
 
-function HeroMetric({ title, value }: { title: string; value: string | number }) {
+function HeroMetric({ value, label }: { value: number; label: string }) {
   return (
-    <div className="rounded-[1.55rem] border border-slate-950/[0.08] bg-white/62 p-4 shadow-[0_14px_40px_rgba(15,23,42,0.04)]">
-      <p className="text-sm font-medium text-slate-400">{title}</p>
-      <p className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-[#0B0D12]">
-        {value}
+    <div className="rounded-[1.7rem] border border-white/10 bg-white/[0.075] p-4 backdrop-blur-xl">
+      <p className="devon-v2-stat text-4xl text-white">{value}</p>
+      <p className="mt-1 text-xs font-extrabold uppercase tracking-[0.18em] text-white/38">
+        {label}
       </p>
     </div>
   );
 }
 
-function MetricCard({
+function MiniHealth({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="rounded-[1.5rem] border border-slate-950/[0.07] bg-white/64 p-4">
+      <p className="devon-v2-stat text-3xl text-[#07111f]">{value}</p>
+      <p className="mt-1 text-xs font-bold text-slate-400">{label}</p>
+    </div>
+  );
+}
+
+function EmptyState({
+  icon: Icon,
+  title,
+  text,
+}: {
+  icon: ElementType;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="rounded-[2rem] border border-dashed border-slate-950/[0.12] bg-white/55 p-8 text-center">
+      <div className="mx-auto mb-4 flex h-13 w-13 items-center justify-center rounded-2xl bg-[#EEF2FF] text-blue-600">
+        <Icon size={22} />
+      </div>
+      <h3 className="text-xl text-[#07111f]">{title}</h3>
+      <p className="mt-2 text-sm font-medium leading-6 text-slate-500">{text}</p>
+    </div>
+  );
+}
+
+function ModuleCard({
   title,
   value,
   sub,
   icon: Icon,
   href,
+  tone,
+  index,
 }: {
   title: string;
   value: number;
   sub: string;
   icon: ElementType;
   href: string;
+  tone: string;
+  index: number;
 }) {
+  const toneClass =
+    tone === "blue"
+      ? "devon-v2-color-chip-blue"
+      : tone === "violet"
+        ? "devon-v2-color-chip-violet"
+        : tone === "cyan"
+          ? "devon-v2-color-chip-cyan"
+          : tone === "pink"
+            ? "devon-v2-color-chip-pink"
+            : "devon-v2-color-chip-amber";
+
   return (
-    <Link
-      href={href}
-      className="group devon-glass rounded-[1.7rem] p-5 transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_85px_rgba(15,23,42,0.11)]"
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        delay: 0.05 * index,
+        duration: 0.45,
+        ease: [0.16, 1, 0.3, 1],
+      }}
     >
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#5B5DF5]">
-          <Icon size={18} />
+      <Link
+        href={href}
+        className="group devon-v2-glass block rounded-[2rem] p-5 transition duration-300 hover:-translate-y-1 hover:shadow-[0_26px_80px_rgba(37,99,235,0.13)]"
+      >
+        <div className="mb-5 flex items-center justify-between">
+          <div
+            className={`flex h-12 w-12 items-center justify-center rounded-2xl ${toneClass}`}
+          >
+            <Icon size={20} />
+          </div>
+
+          <ArrowUpRight
+            size={17}
+            className="text-slate-300 transition duration-300 group-hover:text-blue-600"
+          />
         </div>
 
-        <ArrowUpRight
-          size={16}
-          className="text-slate-300 transition group-hover:text-[#0B0D12]"
-        />
-      </div>
-
-      <p className="text-sm font-medium text-slate-400">{title}</p>
-      <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#0B0D12]">
-        {value}
-      </p>
-      <p className="mt-1 text-xs font-medium text-slate-400">{sub}</p>
-    </Link>
-  );
-}
-
-function QuickLink({ title, href }: { title: string; href: string }) {
-  return (
-    <Link
-      href={href}
-      className="group flex items-center justify-between gap-3 rounded-[1.45rem] border border-slate-950/[0.08] bg-white/66 p-4 text-sm font-semibold text-[#0B0D12] shadow-[0_14px_45px_rgba(15,23,42,0.04)] transition duration-300 hover:bg-white"
-    >
-      {title}
-      <ArrowUpRight
-        size={16}
-        className="text-slate-300 transition group-hover:text-[#0B0D12]"
-      />
-    </Link>
+        <p className="text-sm font-bold text-slate-400">{title}</p>
+        <p className="devon-v2-stat mt-2 text-4xl text-[#07111f]">{value}</p>
+        <p className="mt-1 text-xs font-bold text-slate-400">{sub}</p>
+      </Link>
+    </motion.div>
   );
 }

@@ -7,9 +7,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-instrument-sans);
+
+  --font-sans: var(--font-plus-jakarta);
   --font-mono: var(--font-jetbrains-mono);
-  --font-heading: var(--font-instrument-serif);
+  --font-heading: var(--font-space-grotesk);
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -18,11 +20,13 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -39,6 +43,7 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -51,28 +56,39 @@
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
+
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
+
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
+
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
+
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
+
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
+
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
+
   --destructive: oklch(0.577 0.245 27.325);
+
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+
+  --chart-1: oklch(0.62 0.22 264);
+  --chart-2: oklch(0.58 0.2 290);
+  --chart-3: oklch(0.66 0.16 230);
+  --chart-4: oklch(0.7 0.18 340);
+  --chart-5: oklch(0.76 0.15 82);
+
   --radius: 0.625rem;
+
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -81,32 +97,57 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  --devon-blue: #2563eb;
+  --devon-blue-soft: #dbeafe;
+  --devon-indigo: #4f46e5;
+  --devon-violet: #7c3aed;
+  --devon-cyan: #06b6d4;
+  --devon-pink: #ec4899;
+  --devon-amber: #d8b76a;
+  --devon-ink: #07111f;
+  --devon-slate: #64748b;
+  --devon-paper: #f8fbff;
+
+  --devon-font-ui: var(--font-plus-jakarta);
+  --devon-font-display: var(--font-space-grotesk);
+  --devon-font-mono: var(--font-jetbrains-mono);
 }
 
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
+
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
+
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
+
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
+
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
+
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
+
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
+
   --destructive: oklch(0.704 0.191 22.216);
+
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+
+  --chart-1: oklch(0.62 0.22 264);
+  --chart-2: oklch(0.58 0.2 290);
+  --chart-3: oklch(0.66 0.16 230);
+  --chart-4: oklch(0.7 0.18 340);
+  --chart-5: oklch(0.76 0.15 82);
+
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -121,20 +162,76 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
+
   html {
     @apply font-sans;
+    font-family:
+      var(--devon-font-ui),
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    text-rendering: geometricPrecision;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family:
+      var(--devon-font-ui),
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    letter-spacing: -0.018em;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font-family:
+      var(--devon-font-ui),
+      ui-sans-serif,
+      system-ui,
+      sans-serif;
+  }
+
+  pre,
+  code,
+  kbd {
+    font-family:
+      var(--devon-font-mono),
+      ui-monospace,
+      SFMono-Regular,
+      Menlo,
+      Monaco,
+      Consolas,
+      monospace;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* DEVONOS V1 FOUNDATION CLASSES                                              */
+/* -------------------------------------------------------------------------- */
+
 @keyframes devon-orbit {
   0% {
     transform: translate3d(-8%, -6%, 0) scale(1);
   }
+
   50% {
     transform: translate3d(7%, 9%, 0) scale(1.08);
   }
+
   100% {
     transform: translate3d(-8%, -6%, 0) scale(1);
   }
@@ -145,6 +242,7 @@
   100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-14px);
   }
@@ -155,9 +253,11 @@
     transform: translateX(-55%);
     opacity: 0;
   }
+
   28% {
     opacity: 0.42;
   }
+
   100% {
     transform: translateX(130%);
     opacity: 0;
@@ -170,6 +270,7 @@
     opacity: 0.72;
     transform: scale(1);
   }
+
   50% {
     opacity: 1;
     transform: scale(1.035);
@@ -183,6 +284,7 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.86),
       0 28px 90px rgba(15, 23, 42, 0.08);
   }
+
   50% {
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.96),
@@ -229,7 +331,8 @@
   backdrop-filter: blur(30px);
 }
 
-.devon-card-shine {
+.devon-card-shine,
+.devon-ink-shine {
   position: relative;
   overflow: hidden;
 }
@@ -248,11 +351,6 @@
   transform: translateX(-130%);
   animation: devon-scan 7.5s ease-in-out infinite;
   pointer-events: none;
-}
-
-.devon-ink-shine {
-  position: relative;
-  overflow: hidden;
 }
 
 .devon-ink-shine::before {
@@ -325,108 +423,446 @@
   mix-blend-mode: multiply;
 }
 
-/* DevonOS Premium Typography System */
+/* -------------------------------------------------------------------------- */
+/* DEVONOS VISUAL SYSTEM V2                                                   */
+/* -------------------------------------------------------------------------- */
 
-:root {
-  --devon-font-ui: var(--font-instrument-sans), Inter, ui-sans-serif,
-    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+@keyframes devon-v2-aurora {
+  0% {
+    transform: translate3d(-2%, -2%, 0) scale(1);
+    opacity: 0.8;
+  }
 
-  --devon-font-display: var(--font-instrument-serif), Georgia,
-    "Times New Roman", serif;
+  50% {
+    transform: translate3d(4%, 3%, 0) scale(1.08);
+    opacity: 1;
+  }
 
-  --devon-font-mono: var(--font-jetbrains-mono), "SFMono-Regular", Consolas,
-    monospace;
+  100% {
+    transform: translate3d(-2%, -2%, 0) scale(1);
+    opacity: 0.8;
+  }
 }
 
-html {
-  font-family: var(--devon-font-ui);
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@keyframes devon-v2-float {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-18px) rotate(2deg);
+  }
 }
 
-body {
-  font-family: var(--devon-font-ui);
-  font-feature-settings:
-    "rlig" 1,
-    "calt" 1;
+@keyframes devon-v2-scan {
+  0% {
+    transform: translateX(-30%);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 0.42;
+  }
+
+  80% {
+    opacity: 0.42;
+  }
+
+  100% {
+    transform: translateX(130%);
+    opacity: 0;
+  }
 }
 
-button,
-input,
-textarea,
-select {
-  font-family: var(--devon-font-ui);
+@keyframes devon-v2-shimmer {
+  0% {
+    background-position: -220% 0;
+  }
+
+  100% {
+    background-position: 220% 0;
+  }
 }
 
-pre,
-code,
-kbd {
-  font-family: var(--devon-font-mono);
+@keyframes devon-v2-pulse-ring {
+  0% {
+    transform: scale(0.94);
+    opacity: 0.55;
+  }
+
+  70% {
+    transform: scale(1.28);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1.28);
+    opacity: 0;
+  }
 }
 
-.devon-bg h1 {
-  font-family: var(--devon-font-display);
-  font-weight: 400 !important;
-  line-height: 0.88;
-  letter-spacing: -0.075em !important;
+.devon-v2-shell {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(37, 99, 235, 0.15), transparent 32%),
+    radial-gradient(circle at 82% 8%, rgba(124, 58, 237, 0.14), transparent 34%),
+    radial-gradient(circle at 74% 72%, rgba(6, 182, 212, 0.1), transparent 30%),
+    radial-gradient(circle at 24% 82%, rgba(236, 72, 153, 0.08), transparent 28%),
+    linear-gradient(135deg, #ffffff 0%, #f8fbff 44%, #eef6ff 100%);
 }
 
-.devon-bg h2 {
-  letter-spacing: -0.045em;
+.devon-v2-grid {
+  background-image:
+    linear-gradient(to right, rgba(15, 23, 42, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.045) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: radial-gradient(circle at 50% 14%, black 0%, transparent 68%);
 }
 
-.devon-bg h3 {
-  letter-spacing: -0.028em;
+.devon-v2-noise {
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.9), transparent 1px),
+    radial-gradient(circle at 75% 75%, rgba(37, 99, 235, 0.15), transparent 1px);
+  background-size: 18px 18px;
+  opacity: 0.22;
+  mix-blend-mode: multiply;
 }
 
-.devon-display {
-  font-family: var(--devon-font-display);
-  font-weight: 400;
-  line-height: 0.88;
-  letter-spacing: -0.075em;
+.devon-v2-aurora {
+  filter: blur(26px);
+  animation: devon-v2-aurora 12s ease-in-out infinite;
 }
 
-.devon-ui {
-  font-family: var(--devon-font-ui);
+.devon-v2-float {
+  animation: devon-v2-float 7s ease-in-out infinite;
 }
 
-.devon-mono {
-  font-family: var(--devon-font-mono);
-  letter-spacing: -0.035em;
+.devon-v2-glass {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.075);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.62)),
+    radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.08), transparent 35%),
+    radial-gradient(circle at 100% 100%, rgba(124, 58, 237, 0.08), transparent 35%);
+  box-shadow:
+    0 28px 80px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(24px);
 }
 
-.devon-kicker {
-  font-family: var(--devon-font-mono);
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
+.devon-v2-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.7) 34%,
+    transparent 62%
+  );
+  transform: translateX(-130%);
+  opacity: 0;
 }
 
+.devon-v2-glass:hover::before {
+  animation: devon-v2-scan 1.25s ease;
+}
+
+.devon-v2-dark-card {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(59, 130, 246, 0.42), transparent 34%),
+    radial-gradient(circle at 84% 12%, rgba(124, 58, 237, 0.35), transparent 34%),
+    radial-gradient(circle at 70% 92%, rgba(6, 182, 212, 0.22), transparent 34%),
+    linear-gradient(145deg, #07111f 0%, #0b1530 45%, #111827 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 30px 90px rgba(15, 23, 42, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.devon-v2-dark-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to right, transparent, rgba(255, 255, 255, 0.08), transparent),
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.18), transparent 45%);
+  opacity: 0.7;
+}
+
+.devon-v2-text-gradient {
+  background: linear-gradient(92deg, #07111f 0%, #2563eb 38%, #7c3aed 72%, #ec4899 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.devon-v2-blueprint {
+  background:
+    linear-gradient(to right, rgba(37, 99, 235, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(37, 99, 235, 0.055) 1px, transparent 1px),
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 42%),
+    rgba(255, 255, 255, 0.72);
+  background-size: 34px 34px, 34px 34px, auto, auto;
+}
+
+.devon-v2-orb {
+  position: relative;
+}
+
+.devon-v2-orb::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: inherit;
+  border: 1px solid rgba(37, 99, 235, 0.22);
+  animation: devon-v2-pulse-ring 2.4s ease-out infinite;
+}
+
+.devon-v2-premium-border {
+  position: relative;
+}
+
+.devon-v2-premium-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(37, 99, 235, 0.35),
+    rgba(124, 58, 237, 0.22),
+    rgba(236, 72, 153, 0.24),
+    rgba(216, 183, 106, 0.28)
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.devon-v2-shimmer-text {
+  background: linear-gradient(
+    90deg,
+    #07111f 0%,
+    #2563eb 26%,
+    #7c3aed 48%,
+    #06b6d4 68%,
+    #07111f 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: devon-v2-shimmer 8s linear infinite;
+}
+
+.devon-v2-soft-button {
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.95), rgba(79, 70, 229, 0.95)),
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.5), transparent 34%);
+  box-shadow:
+    0 22px 55px rgba(37, 99, 235, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.devon-v2-color-chip-blue {
+  background: linear-gradient(135deg, #dbeafe, #eef2ff);
+  color: #2563eb;
+}
+
+.devon-v2-color-chip-violet {
+  background: linear-gradient(135deg, #ede9fe, #f5f3ff);
+  color: #7c3aed;
+}
+
+.devon-v2-color-chip-cyan {
+  background: linear-gradient(135deg, #cffafe, #ecfeff);
+  color: #0891b2;
+}
+
+.devon-v2-color-chip-pink {
+  background: linear-gradient(135deg, #fce7f3, #fff1f2);
+  color: #db2777;
+}
+
+.devon-v2-color-chip-amber {
+  background: linear-gradient(135deg, #fff7ed, #fff8e1);
+  color: #8a6b22;
+}
+
+/* -------------------------------------------------------------------------- */
+/* DEVONOS TYPOGRAPHY V2                                                      */
+/* -------------------------------------------------------------------------- */
+
+.devon-v2-shell h1,
+.devon-v2-shell h2,
+.devon-v2-shell h3,
+.devon-display,
 .devon-elegant-title {
-  font-family: var(--devon-font-display);
-  font-weight: 400;
-  line-height: 0.92;
+  font-family:
+    var(--devon-font-display),
+    var(--devon-font-ui),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
   letter-spacing: -0.065em;
 }
 
+.devon-v2-shell h1 {
+  font-weight: 700;
+  line-height: 0.92;
+}
+
+.devon-v2-shell h2 {
+  font-weight: 700;
+  letter-spacing: -0.052em;
+}
+
+.devon-v2-shell h3 {
+  font-weight: 650;
+  letter-spacing: -0.04em;
+}
+
+.devon-v2-shell p,
+.devon-v2-shell span,
+.devon-v2-shell a,
+.devon-v2-shell button,
+.devon-v2-shell input,
+.devon-v2-shell textarea,
+.devon-v2-shell select {
+  letter-spacing: -0.016em;
+}
+
+.devon-kicker,
+.devon-v2-shell [class*="uppercase"] {
+  font-family:
+    var(--devon-font-ui),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  letter-spacing: 0.18em;
+}
+
+.devon-number,
+.devon-v2-shell .text-3xl,
+.devon-v2-shell .text-4xl,
+.devon-v2-shell .text-5xl,
+.devon-v2-shell .text-6xl,
+.devon-v2-shell .text-7xl {
+  font-family:
+    var(--devon-font-display),
+    var(--devon-font-ui),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  font-feature-settings:
+    "ss01" 1,
+    "cv01" 1,
+    "tnum" 1;
+}
+
+.devon-copy,
 .devon-premium-copy {
-  font-family: var(--devon-font-ui);
-  line-height: 1.75;
+  font-family:
+    var(--devon-font-ui),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
   letter-spacing: -0.012em;
+  line-height: 1.78;
 }
 
-.devon-bg p,
-.devon-bg span,
-.devon-bg a,
-.devon-bg button,
-.devon-bg input,
-.devon-bg textarea,
-.devon-bg select {
-  letter-spacing: -0.012em;
+.devon-v2-premium-heading {
+  font-family:
+    var(--devon-font-display),
+    var(--devon-font-ui),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.075em;
+  line-height: 0.88;
 }
 
-.devon-bg .devon-kicker {
-  letter-spacing: 0.24em;
+.devon-v2-editorial {
+  font-family:
+    var(--devon-font-display),
+    var(--devon-font-ui),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.055em;
+}
+
+.devon-v2-label {
+  font-family:
+    var(--devon-font-ui),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+}
+
+.devon-v2-stat {
+  font-family:
+    var(--devon-font-display),
+    var(--devon-font-ui),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.07em;
+}
+
+.devon-v2-nav-text {
+  font-family:
+    var(--devon-font-ui),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.devon-v2-luxury-wordmark {
+  font-family:
+    var(--devon-font-display),
+    var(--devon-font-ui),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.075em;
+  line-height: 0.92;
+}
+
+.devon-v2-body-soft {
+  font-family:
+    var(--devon-font-ui),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.018em;
+  line-height: 1.72;
+}
+
+.devon-v2-command-text {
+  font-family:
+    var(--devon-font-mono),
+    ui-monospace,
+    monospace;
+  letter-spacing: -0.03em;
 }

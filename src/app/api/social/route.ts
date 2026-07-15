@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const kpis = await prisma.kpiItem.findMany({
+    const drafts = await prisma.socialDraft.findMany({
       orderBy: {
         createdAt: "desc",
       },
@@ -11,15 +11,15 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
-      kpis,
+      drafts,
     });
   } catch (error) {
-    console.error("Failed to load KPIs:", error);
+    console.error("Failed to load social drafts:", error);
 
     return NextResponse.json(
       {
         ok: false,
-        message: "Failed to load KPIs.",
+        message: "Failed to load social drafts.",
       },
       { status: 500 }
     );
@@ -30,30 +30,31 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const kpi = await prisma.kpiItem.create({
+    const draft = await prisma.socialDraft.create({
       data: {
         title: String(body.title ?? "").trim(),
-        owner: String(body.owner ?? "").trim(),
-        status: String(body.status ?? "Not Started"),
-        priority: String(body.priority ?? "Medium"),
-        dueDate: String(body.dueDate ?? ""),
-        description: String(body.description ?? "").trim(),
-        outcome: String(body.outcome ?? "").trim(),
+        campaign: String(body.campaign ?? "").trim(),
+        platform: String(body.platform ?? "Instagram"),
+        status: String(body.status ?? "Draft"),
+        scheduledDate: String(body.scheduledDate ?? ""),
+        caption: String(body.caption ?? "").trim(),
+        visualDirection: String(body.visualDirection ?? "").trim(),
+        hashtags: String(body.hashtags ?? "").trim(),
         notes: String(body.notes ?? "").trim(),
       },
     });
 
     return NextResponse.json({
       ok: true,
-      kpi,
+      draft,
     });
   } catch (error) {
-    console.error("Failed to create KPI:", error);
+    console.error("Failed to create social draft:", error);
 
     return NextResponse.json(
       {
         ok: false,
-        message: "Failed to create KPI.",
+        message: "Failed to create social draft.",
       },
       { status: 500 }
     );

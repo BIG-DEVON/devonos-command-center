@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const kpis = await prisma.kpiItem.findMany({
+    const assets = await prisma.assetRecord.findMany({
       orderBy: {
         createdAt: "desc",
       },
@@ -11,15 +11,15 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
-      kpis,
+      assets,
     });
   } catch (error) {
-    console.error("Failed to load KPIs:", error);
+    console.error("Failed to load assets:", error);
 
     return NextResponse.json(
       {
         ok: false,
-        message: "Failed to load KPIs.",
+        message: "Failed to load assets.",
       },
       { status: 500 }
     );
@@ -30,30 +30,30 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const kpi = await prisma.kpiItem.create({
+    const asset = await prisma.assetRecord.create({
       data: {
-        title: String(body.title ?? "").trim(),
-        owner: String(body.owner ?? "").trim(),
-        status: String(body.status ?? "Not Started"),
+        name: String(body.name ?? "").trim(),
+        type: String(body.type ?? "Document"),
+        project: String(body.project ?? "").trim(),
+        status: String(body.status ?? "Raw"),
         priority: String(body.priority ?? "Medium"),
-        dueDate: String(body.dueDate ?? ""),
-        description: String(body.description ?? "").trim(),
-        outcome: String(body.outcome ?? "").trim(),
+        link: String(body.link ?? "").trim(),
+        tags: String(body.tags ?? "").trim(),
         notes: String(body.notes ?? "").trim(),
       },
     });
 
     return NextResponse.json({
       ok: true,
-      kpi,
+      asset,
     });
   } catch (error) {
-    console.error("Failed to create KPI:", error);
+    console.error("Failed to create asset:", error);
 
     return NextResponse.json(
       {
         ok: false,
-        message: "Failed to create KPI.",
+        message: "Failed to create asset.",
       },
       { status: 500 }
     );

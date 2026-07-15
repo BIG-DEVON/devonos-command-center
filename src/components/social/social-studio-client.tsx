@@ -3,24 +3,23 @@
 import type { ElementType } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
+  AlertCircle,
   ArrowUpRight,
   CalendarDays,
   Camera,
   CheckCircle2,
-  ClipboardCopy,
   Copy,
-  Crown,
   FileText,
-  ImageIcon,
-  Lightbulb,
   MessageSquareText,
   PlaySquare,
   Plus,
+  RefreshCcw,
   Search,
   Send,
+  Share2,
   Sparkles,
   Trash2,
-            } from "lucide-react";
+} from "lucide-react";
 
 type Platform = "Instagram" | "X" | "YouTube" | "LinkedIn" | "Facebook";
 
@@ -44,11 +43,27 @@ type SocialDraft = {
   hashtags: string;
   notes: string;
   createdAt: string;
+  updatedAt: string;
 };
 
-type SocialForm = Omit<SocialDraft, "id" | "createdAt">;
+type SocialForm = {
+  title: string;
+  campaign: string;
+  platform: Platform;
+  status: PostStatus;
+  scheduledDate: string;
+  caption: string;
+  visualDirection: string;
+  hashtags: string;
+  notes: string;
+};
 
-const STORAGE_KEY = "devonos.social-drafts.v1";
+type SocialApiResponse = {
+  ok: boolean;
+  drafts?: SocialDraft[];
+  draft?: SocialDraft;
+  message?: string;
+};
 
 const platforms: Platform[] = [
   "Instagram",
@@ -79,41 +94,21 @@ const emptyForm: SocialForm = {
   notes: "",
 };
 
-const starterDrafts: SocialDraft[] = [
-  {
-    id: "starter-tax-reform-post",
-    title: "Tax Reform Awareness Post",
-    campaign: "Tax Reform",
-    platform: "Instagram",
-    status: "Draft",
-    scheduledDate: "",
-    caption:
-      "Clear communication strengthens public understanding. As Nigeria’s tax reform journey continues, citizens and businesses deserve simple, accessible, and reliable information.",
-    visualDirection:
-      "Premium white editorial card, soft shadows, refined typography, institutional but modern layout.",
-    hashtags: "#TaxReform #PublicFinance #RevenueAdministration",
-    notes: "Can be adapted for Instagram and X.",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "starter-presumptive-tax-video",
-    title: "Presumptive Tax Explainer Caption",
-    campaign: "Presumptive Tax Regulations",
-    platform: "YouTube",
-    status: "Review",
-    scheduledDate: "",
-    caption:
-      "In this explainer, we break down key things taxpayers should know about the Presumptive Tax Regulations 2026 and what they mean for informal sector taxpayers, small businesses, and revenue administration.",
-    visualDirection:
-      "Government documentary thumbnail, clean white background, dark typography, subtle gold highlight.",
-    hashtags: "#PresumptiveTax #TaxEducation #NigeriaTax",
-    notes: "Use as YouTube description base.",
-    createdAt: new Date().toISOString(),
-  },
-];
-
-function makeId() {
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+function normalizeDraft(item: Partial<SocialDraft>): SocialDraft {
+  return {
+    id: item.id ?? "",
+    title: item.title ?? "",
+    campaign: item.campaign ?? "",
+    platform: (item.platform ?? "Instagram") as Platform,
+    status: (item.status ?? "Draft") as PostStatus,
+    scheduledDate: item.scheduledDate ?? "",
+    caption: item.caption ?? "",
+    visualDirection: item.visualDirection ?? "",
+    hashtags: item.hashtags ?? "",
+    notes: item.notes ?? "",
+    createdAt: item.createdAt ?? new Date().toISOString(),
+    updatedAt: item.updatedAt ?? new Date().toISOString(),
+  };
 }
 
 function platformIcon(platform: Platform) {
@@ -134,14 +129,14 @@ function platformClass(platform: Platform) {
   }
 
   if (platform === "X") {
-    return "border-slate-200 bg-slate-100 text-slate-700";
+    return "border-slate-200 bg-slate-100 text-slate-600";
   }
 
   if (platform === "LinkedIn") {
     return "border-blue-100 bg-blue-50 text-blue-600";
   }
 
-  return "border-[#D8B76A]/25 bg-[#FFF8E1] text-[#8A6B22]";
+  return "border-[#5B5DF5]/15 bg-[#EEF2FF] text-[#5B5DF5]";
 }
 
 function statusClass(status: PostStatus) {
@@ -149,73 +144,55 @@ function statusClass(status: PostStatus) {
     return "border-blue-100 bg-blue-50 text-blue-600";
   }
 
-  if (status === "Approved") {
+  if (status === "Approved" || status === "Review") {
     return "border-[#5B5DF5]/15 bg-[#EEF2FF] text-[#5B5DF5]";
-  }
-
-  if (status === "Review") {
-    return "border-[#D8B76A]/25 bg-[#FFF8E1] text-[#8A6B22]";
   }
 
   if (status === "Archived") {
     return "border-slate-200 bg-slate-100 text-slate-500";
   }
 
-  return "border-slate-200 bg-white text-slate-500";
+  return "border-[#D8B76A]/25 bg-[#FFF8E1] text-[#8A6B22]";
 }
 
 function formatDate(dateString: string) {
-  if (!dateString) return "Not scheduled";
+  if (!dateString) return "No date";
+
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) return "No date";
 
   return new Intl.DateTimeFormat("en-NG", {
     weekday: "short",
     day: "numeric",
     month: "long",
     year: "numeric",
-  }).format(new Date(dateString));
+  }).format(date);
 }
 
 function buildExportText(draft: SocialDraft | null) {
-  if (!draft) return "Select a draft to preview and copy its caption.";
+  if (!draft) return "Select a social draft to preview it.";
 
-  const lines: string[] = [];
-
-  lines.push(`${draft.title}`);
-  lines.push("");
-  lines.push(`Platform: ${draft.platform}`);
-  lines.push(`Status: ${draft.status}`);
-
-  if (draft.campaign) {
-    lines.push(`Campaign: ${draft.campaign}`);
-  }
-
-  if (draft.scheduledDate) {
-    lines.push(`Scheduled Date: ${formatDate(draft.scheduledDate)}`);
-  }
-
-  lines.push("");
-  lines.push("Caption:");
-  lines.push(draft.caption || "No caption added yet.");
-
-  if (draft.hashtags) {
-    lines.push("");
-    lines.push("Hashtags:");
-    lines.push(draft.hashtags);
-  }
-
-  if (draft.visualDirection) {
-    lines.push("");
-    lines.push("Visual Direction:");
-    lines.push(draft.visualDirection);
-  }
-
-  if (draft.notes) {
-    lines.push("");
-    lines.push("Notes:");
-    lines.push(draft.notes);
-  }
-
-  return lines.join("\n");
+  return [
+    draft.title,
+    "",
+    `Campaign: ${draft.campaign || "No campaign"}`,
+    `Platform: ${draft.platform}`,
+    `Status: ${draft.status}`,
+    `Scheduled Date: ${formatDate(draft.scheduledDate)}`,
+    "",
+    "Caption:",
+    draft.caption || "No caption added.",
+    "",
+    "Visual Direction:",
+    draft.visualDirection || "No visual direction added.",
+    "",
+    "Hashtags:",
+    draft.hashtags || "No hashtags added.",
+    "",
+    "Notes:",
+    draft.notes || "No notes added.",
+  ].join("\n");
 }
 
 export function SocialStudioClient() {
@@ -224,24 +201,48 @@ export function SocialStudioClient() {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  useEffect(() => {
+  async function loadDrafts() {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      setErrorMessage("");
 
-      if (stored) {
-        setDrafts(JSON.parse(stored));
-      } else {
-        setDrafts(starterDrafts);
+      const response = await fetch("/api/social", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to load social drafts.");
       }
-    } catch {
-      setDrafts(starterDrafts);
+
+      const data = (await response.json()) as SocialApiResponse;
+
+      if (!data.ok || !data.drafts) {
+        throw new Error(data.message || "Social response was invalid.");
+      }
+
+      const nextDrafts = data.drafts.map(normalizeDraft);
+
+      setDrafts(nextDrafts);
+
+      if (!selectedId) {
+        setSelectedId(nextDrafts[0]?.id ?? null);
+      }
+    } catch (error) {
+      console.error("Failed to load social drafts:", error);
+      setErrorMessage("Social drafts could not be loaded from the database.");
+    } finally {
+      setLoaded(true);
     }
-  }, []);
+  }
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(drafts));
-  }, [drafts]);
+    loadDrafts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filteredDrafts = useMemo(() => {
     const search = query.trim().toLowerCase();
@@ -254,6 +255,7 @@ export function SocialStudioClient() {
         draft.campaign,
         draft.platform,
         draft.status,
+        draft.scheduledDate,
         draft.caption,
         draft.visualDirection,
         draft.hashtags,
@@ -266,49 +268,128 @@ export function SocialStudioClient() {
   }, [drafts, query]);
 
   const selectedDraft = useMemo(() => {
-    if (!selectedId) return drafts[0] ?? null;
-    return drafts.find((draft) => draft.id === selectedId) ?? null;
-  }, [drafts, selectedId]);
+    if (!selectedId) return filteredDrafts[0] ?? null;
 
-  const approved = drafts.filter((draft) => draft.status === "Approved").length;
-  const posted = drafts.filter((draft) => draft.status === "Posted").length;
-  const inReview = drafts.filter((draft) => draft.status === "Review").length;
-  const scheduled = drafts.filter((draft) => draft.scheduledDate).length;
+    return (
+      drafts.find((draft) => draft.id === selectedId) ??
+      filteredDrafts[0] ??
+      null
+    );
+  }, [drafts, filteredDrafts, selectedId]);
+
+  const reviewDrafts = drafts.filter((draft) => draft.status === "Review").length;
+  const approvedDrafts = drafts.filter(
+    (draft) => draft.status === "Approved"
+  ).length;
+  const postedDrafts = drafts.filter((draft) => draft.status === "Posted").length;
+  const scheduledDrafts = drafts.filter((draft) => draft.scheduledDate).length;
 
   const exportText = buildExportText(selectedDraft);
 
-  function addDraft() {
-    if (!form.title.trim()) return;
+  function updateForm<Key extends keyof SocialForm>(
+    key: Key,
+    value: SocialForm[Key]
+  ) {
+    setForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
 
-    const newDraft: SocialDraft = {
-      ...form,
-      id: makeId(),
-      title: form.title.trim(),
-      campaign: form.campaign.trim(),
-      caption: form.caption.trim(),
-      visualDirection: form.visualDirection.trim(),
-      hashtags: form.hashtags.trim(),
-      notes: form.notes.trim(),
-      createdAt: new Date().toISOString(),
-    };
-
-    setDrafts((current) => [newDraft, ...current]);
-    setSelectedId(newDraft.id);
-    setForm(emptyForm);
+    setErrorMessage("");
   }
 
-  function removeDraft(id: string) {
-    setDrafts((current) => current.filter((draft) => draft.id !== id));
+  async function addDraft() {
+    if (!form.title.trim()) return;
 
-    if (selectedId === id) {
-      setSelectedId(null);
+    try {
+      setSaving(true);
+      setErrorMessage("");
+
+      const response = await fetch("/api/social", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create social draft.");
+      }
+
+      const data = (await response.json()) as SocialApiResponse;
+
+      if (!data.ok || !data.draft) {
+        throw new Error(data.message || "Social response was invalid.");
+      }
+
+      const newDraft = normalizeDraft(data.draft);
+
+      setDrafts((current) => [newDraft, ...current]);
+      setSelectedId(newDraft.id);
+      setForm(emptyForm);
+    } catch (error) {
+      console.error("Failed to create social draft:", error);
+      setErrorMessage("Social draft could not be saved to the database.");
+    } finally {
+      setSaving(false);
     }
   }
 
-  function updateStatus(id: string, status: PostStatus) {
-    setDrafts((current) =>
-      current.map((draft) => (draft.id === id ? { ...draft, status } : draft))
-    );
+  async function updateStatus(id: string, status: PostStatus) {
+    try {
+      setErrorMessage("");
+
+      const response = await fetch(`/api/social/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update social draft.");
+      }
+
+      const data = (await response.json()) as SocialApiResponse;
+
+      if (!data.ok || !data.draft) {
+        throw new Error(data.message || "Social response was invalid.");
+      }
+
+      const updatedDraft = normalizeDraft(data.draft);
+
+      setDrafts((current) =>
+        current.map((draft) => (draft.id === id ? updatedDraft : draft))
+      );
+    } catch (error) {
+      console.error("Failed to update social draft:", error);
+      setErrorMessage("Social draft status could not be updated.");
+    }
+  }
+
+  async function removeDraft(id: string) {
+    try {
+      setErrorMessage("");
+
+      const response = await fetch(`/api/social/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete social draft.");
+      }
+
+      setDrafts((current) => current.filter((draft) => draft.id !== id));
+
+      if (selectedId === id) {
+        setSelectedId(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete social draft:", error);
+      setErrorMessage("Social draft could not be deleted.");
+    }
   }
 
   async function copyDraft() {
@@ -317,7 +398,7 @@ export function SocialStudioClient() {
 
     window.setTimeout(() => {
       setCopied(false);
-    }, 1800);
+    }, 1600);
   }
 
   return (
@@ -327,43 +408,48 @@ export function SocialStudioClient() {
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-950/[0.08] bg-white/70 px-4 py-2 text-xs font-semibold text-slate-600 shadow-[0_12px_40px_rgba(15,23,42,0.045)]">
-                <MessageSquareText size={14} className="text-[#5B5DF5]" />
-                Draft Creator
+                <Share2 size={14} className="text-[#5B5DF5]" />
+                Social Draft Intake
               </div>
 
               <h2 className="text-2xl font-semibold tracking-tight text-[#0B0D12]">
-                Create social media draft
+                Create a social draft
               </h2>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                Prepare captions, campaign notes, visual directions, hashtags,
-                and publishing status for each platform.
+                Draft captions, campaign notes, hashtags, visual direction, and
+                platform status directly into your Prisma database.
               </p>
             </div>
 
             <button
               onClick={addDraft}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0B0D12] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_55px_rgba(15,23,42,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#171A23]"
+              disabled={saving || !loaded}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0B0D12] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_55px_rgba(15,23,42,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#171A23] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus size={16} />
-              Save Draft
+              {saving ? "Saving..." : "Save Draft"}
             </button>
           </div>
+
+          {errorMessage ? (
+            <div className="mb-5 rounded-[1.4rem] border border-red-100 bg-red-50 p-4 text-red-600">
+              <div className="flex gap-3">
+                <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                <p className="text-sm leading-6">{errorMessage}</p>
+              </div>
+            </div>
+          ) : null}
 
           <div className="grid gap-3 md:grid-cols-2">
             <label className="space-y-2 md:col-span-2">
               <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Post Title
+                Draft Title
               </span>
               <input
                 value={form.title}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    title: event.target.value,
-                  }))
-                }
-                placeholder="e.g. Tax Reform Awareness Caption"
+                onChange={(event) => updateForm("title", event.target.value)}
+                placeholder="e.g. Tax Reform Awareness Post"
                 className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               />
             </label>
@@ -374,14 +460,23 @@ export function SocialStudioClient() {
               </span>
               <input
                 value={form.campaign}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    campaign: event.target.value,
-                  }))
-                }
-                placeholder="Tax Reform, Birthdays, Events..."
+                onChange={(event) => updateForm("campaign", event.target.value)}
+                placeholder="e.g. Presumptive Tax Awareness"
                 className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
+              />
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Scheduled Date
+              </span>
+              <input
+                type="date"
+                value={form.scheduledDate}
+                onChange={(event) =>
+                  updateForm("scheduledDate", event.target.value)
+                }
+                className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               />
             </label>
 
@@ -392,10 +487,7 @@ export function SocialStudioClient() {
               <select
                 value={form.platform}
                 onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    platform: event.target.value as Platform,
-                  }))
+                  updateForm("platform", event.target.value as Platform)
                 }
                 className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               >
@@ -412,10 +504,7 @@ export function SocialStudioClient() {
               <select
                 value={form.status}
                 onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    status: event.target.value as PostStatus,
-                  }))
+                  updateForm("status", event.target.value as PostStatus)
                 }
                 className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               >
@@ -425,37 +514,15 @@ export function SocialStudioClient() {
               </select>
             </label>
 
-            <label className="space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Scheduled Date
-              </span>
-              <input
-                type="date"
-                value={form.scheduledDate}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    scheduledDate: event.target.value,
-                  }))
-                }
-                className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
-              />
-            </label>
-
             <label className="space-y-2 md:col-span-2">
               <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
                 Caption
               </span>
               <textarea
                 value={form.caption}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    caption: event.target.value,
-                  }))
-                }
-                placeholder="Write the caption here..."
-                rows={5}
+                onChange={(event) => updateForm("caption", event.target.value)}
+                placeholder="Write the post caption here..."
+                rows={6}
                 className="w-full resize-none rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium leading-6 text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               />
             </label>
@@ -467,13 +534,10 @@ export function SocialStudioClient() {
               <textarea
                 value={form.visualDirection}
                 onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    visualDirection: event.target.value,
-                  }))
+                  updateForm("visualDirection", event.target.value)
                 }
-                placeholder="Describe the design/poster/video direction..."
-                rows={3}
+                placeholder="Describe the visual, design style, frame idea, or creative direction..."
+                rows={4}
                 className="w-full resize-none rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium leading-6 text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               />
             </label>
@@ -484,13 +548,8 @@ export function SocialStudioClient() {
               </span>
               <input
                 value={form.hashtags}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    hashtags: event.target.value,
-                  }))
-                }
-                placeholder="#TaxReform #RevenueAdministration"
+                onChange={(event) => updateForm("hashtags", event.target.value)}
+                placeholder="#TaxAwareness #PublicCommunication"
                 className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               />
             </label>
@@ -501,13 +560,8 @@ export function SocialStudioClient() {
               </span>
               <textarea
                 value={form.notes}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    notes: event.target.value,
-                  }))
-                }
-                placeholder="Approval notes, design notes, posting instructions..."
+                onChange={(event) => updateForm("notes", event.target.value)}
+                placeholder="Approval notes, posting instructions, or internal comments..."
                 rows={3}
                 className="w-full resize-none rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium leading-6 text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               />
@@ -518,64 +572,61 @@ export function SocialStudioClient() {
         <div className="devon-glass-dark devon-ink-shine rounded-[2.25rem] p-6 text-white">
           <div className="mb-6 flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#0B0D12] shadow-[0_22px_70px_rgba(255,255,255,0.18)]">
-              <Crown size={21} />
+              <Share2 size={21} />
             </div>
 
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/34">
-                Publishing Radar
+                Publishing Signal
               </p>
               <h2 className="mt-1 text-xl font-semibold tracking-tight">
-                Social command overview
+                {drafts.length} database drafts
               </h2>
             </div>
           </div>
 
           <div className="grid grid-cols-4 gap-3">
-            <DarkMetric value={drafts.length} label="Drafts" />
-            <DarkMetric value={inReview} label="Review" />
-            <DarkMetric value={approved} label="Approved" />
-            <DarkMetric value={posted} label="Posted" />
+            <DarkMetric value={reviewDrafts} label="Review" />
+            <DarkMetric value={approvedDrafts} label="Approved" />
+            <DarkMetric value={postedDrafts} label="Posted" />
+            <DarkMetric value={scheduledDrafts} label="Scheduled" />
           </div>
 
-          <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-black/25 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/32">
-              Prime note
-            </p>
-            <p className="mt-3 text-sm leading-6 text-white/62">
-              Keep every post in draft or review until it has been checked. Once
-              backend approval is added, DevonOS will record who approved each
-              post.
-            </p>
-          </div>
+          <button
+            onClick={loadDrafts}
+            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-[#0B0D12] shadow-[0_18px_55px_rgba(255,255,255,0.14)] transition duration-300 hover:-translate-y-0.5"
+          >
+            <RefreshCcw size={16} />
+            Refresh Social Data
+          </button>
         </div>
       </div>
 
       <div className="space-y-5">
         <div className="grid gap-3 md:grid-cols-4">
           <MetricCard
-            title="Total Drafts"
+            title="Drafts"
             value={drafts.length}
-            sub="Saved posts"
+            sub="Database records"
             icon={FileText}
           />
           <MetricCard
-            title="Scheduled"
-            value={scheduled}
-            sub="With dates"
-            icon={CalendarDays}
+            title="Review"
+            value={reviewDrafts}
+            sub="Needs approval"
+            icon={Sparkles}
           />
           <MetricCard
-            title="In Review"
-            value={inReview}
-            sub="Needs checks"
-            icon={Lightbulb}
+            title="Approved"
+            value={approvedDrafts}
+            sub="Ready to post"
+            icon={CheckCircle2}
           />
           <MetricCard
             title="Posted"
-            value={posted}
+            value={postedDrafts}
             sub="Published"
-            icon={CheckCircle2}
+            icon={Send}
           />
         </div>
 
@@ -583,10 +634,11 @@ export function SocialStudioClient() {
           <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <h2 className="text-xl font-semibold tracking-tight text-[#0B0D12]">
-                Draft Library
+                Social Draft Library
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Search, select, and manage social posts.
+                Search, preview, update, and delete database-backed social
+                drafts.
               </p>
             </div>
 
@@ -598,22 +650,34 @@ export function SocialStudioClient() {
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search drafts..."
+                placeholder="Search social drafts..."
                 className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 py-3 pl-11 pr-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               />
             </div>
           </div>
 
-          {filteredDrafts.length === 0 ? (
+          {!loaded ? (
             <div className="rounded-[1.6rem] border border-dashed border-slate-950/[0.12] bg-white/55 p-8 text-center">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#5B5DF5]">
-                <ImageIcon size={20} />
+                <RefreshCcw size={20} />
               </div>
               <h3 className="text-base font-semibold text-[#0B0D12]">
-                No drafts yet
+                Loading social drafts
               </h3>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Add your first social media draft and DevonOS will organize it.
+                Fetching records from the database.
+              </p>
+            </div>
+          ) : filteredDrafts.length === 0 ? (
+            <div className="rounded-[1.6rem] border border-dashed border-slate-950/[0.12] bg-white/55 p-8 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#5B5DF5]">
+                <Share2 size={20} />
+              </div>
+              <h3 className="text-base font-semibold text-[#0B0D12]">
+                No social drafts found
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Add your first social draft to start tracking content.
               </p>
             </div>
           ) : (
@@ -655,7 +719,7 @@ export function SocialStudioClient() {
                       <button
                         onClick={() => removeDraft(draft.id)}
                         className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-950/[0.08] bg-white/70 text-slate-400 transition duration-300 hover:bg-white hover:text-red-500"
-                        aria-label="Remove draft"
+                        aria-label="Remove social draft"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -677,6 +741,13 @@ export function SocialStudioClient() {
                       >
                         {draft.status}
                       </span>
+
+                      {draft.scheduledDate ? (
+                        <span className="rounded-full border border-slate-950/[0.08] bg-white px-3 py-1 text-xs font-semibold text-slate-500">
+                          <CalendarDays size={12} className="mr-1 inline" />
+                          {formatDate(draft.scheduledDate)}
+                        </span>
+                      ) : null}
                     </div>
 
                     {draft.caption ? (
@@ -704,49 +775,31 @@ export function SocialStudioClient() {
         </div>
 
         <div className="devon-glass rounded-[2.25rem] p-6">
-          <div className="mb-5 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#FFF8E1] text-[#8A6B22]">
-              <ClipboardCopy size={19} />
-            </div>
-
+          <div className="mb-5 flex items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold tracking-tight text-[#0B0D12]">
-                Caption Preview
+                Draft Preview
               </h2>
               <p className="mt-1 text-sm text-slate-400">
-                Select a draft and copy it.
+                Select a draft and copy its full content package.
               </p>
             </div>
-          </div>
 
-          {selectedDraft ? (
-            <div className="mb-4 rounded-[1.55rem] border border-slate-950/[0.08] bg-white/66 p-4 shadow-[0_14px_45px_rgba(15,23,42,0.04)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Selected draft
-              </p>
-              <h3 className="mt-2 text-lg font-semibold text-[#0B0D12]">
-                {selectedDraft.title}
-              </h3>
-              <p className="mt-1 text-sm font-medium text-slate-500">
-                {selectedDraft.platform} · {selectedDraft.status}
-              </p>
-            </div>
-          ) : null}
+            <button
+              onClick={copyDraft}
+              disabled={!selectedDraft}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0B0D12] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_55px_rgba(15,23,42,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#171A23] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+              {copied ? "Copied" : "Copy Draft"}
+            </button>
+          </div>
 
           <div className="rounded-[1.55rem] border border-slate-950/[0.08] bg-white/70 p-4">
             <pre className="max-h-[460px] overflow-auto whitespace-pre-wrap font-sans text-sm leading-7 text-slate-700">
               {exportText}
             </pre>
           </div>
-
-          <button
-            onClick={copyDraft}
-            disabled={!selectedDraft}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0B0D12] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_55px_rgba(15,23,42,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#171A23] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
-            {copied ? "Copied" : "Copy Draft"}
-          </button>
         </div>
       </div>
     </div>

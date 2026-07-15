@@ -3,6 +3,7 @@
 import type { ElementType } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
+  AlertCircle,
   ArrowUpRight,
   CalendarDays,
   CheckCircle2,
@@ -12,6 +13,7 @@ import {
   Globe2,
   Lightbulb,
   Plus,
+  RefreshCcw,
   Search,
   Sparkles,
   Trash2,
@@ -42,11 +44,27 @@ type GlobalEvent = {
   captionDraft: string;
   notes: string;
   createdAt: string;
+  updatedAt: string;
 };
 
-type EventForm = Omit<GlobalEvent, "id" | "createdAt">;
+type EventForm = {
+  title: string;
+  date: string;
+  category: EventCategory;
+  relevance: EventRelevance;
+  status: EventStatus;
+  contentAngle: string;
+  visualDirection: string;
+  captionDraft: string;
+  notes: string;
+};
 
-const STORAGE_KEY = "devonos.global-events.v1";
+type EventsApiResponse = {
+  ok: boolean;
+  events?: GlobalEvent[];
+  event?: GlobalEvent;
+  message?: string;
+};
 
 const categories: EventCategory[] = [
   "Global Observance",
@@ -58,9 +76,9 @@ const categories: EventCategory[] = [
   "Custom",
 ];
 
-const relevanceOptions: EventRelevance[] = ["High", "Medium", "Low"];
+const relevances: EventRelevance[] = ["High", "Medium", "Low"];
 
-const statusOptions: EventStatus[] = [
+const statuses: EventStatus[] = [
   "Idea",
   "Drafting",
   "Approved",
@@ -68,62 +86,11 @@ const statusOptions: EventStatus[] = [
   "Skipped",
 ];
 
-const starterEvents: GlobalEvent[] = [
-  {
-    id: "starter-womens-day",
-    title: "International Women’s Day",
-    date: "2026-03-08",
-    category: "Global Observance",
-    relevance: "High",
-    status: "Idea",
-    contentAngle:
-      "Celebrate women’s contributions to leadership, public service, policy, communication, and national development.",
-    visualDirection:
-      "Premium white editorial layout with elegant portraits, soft typography, and refined institutional tone.",
-    captionDraft:
-      "Today, we celebrate the strength, leadership, and contributions of women across public service, governance, and national development. Happy International Women’s Day.",
-    notes: "Good for institutional social media content.",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "starter-health-day",
-    title: "World Health Day",
-    date: "2026-04-07",
-    category: "Global Observance",
-    relevance: "Medium",
-    status: "Idea",
-    contentAngle:
-      "Connect health, wellbeing, public service productivity, and responsible institutions.",
-    visualDirection:
-      "Clean white health-themed graphic with soft blue accents and calm official composition.",
-    captionDraft:
-      "Health remains essential to productivity, public service, and national progress. Today, we join the global community in commemorating World Health Day.",
-    notes: "Useful if department wants broader public awareness posts.",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "starter-pr-day",
-    title: "World Public Relations Day",
-    date: "2026-07-16",
-    category: "Media & Communication",
-    relevance: "High",
-    status: "Idea",
-    contentAngle:
-      "Highlight the role of strategic communication, public trust, clarity, and institutional reputation.",
-    visualDirection:
-      "Luxury communication-themed design with microphone, speech elements, subtle glass panels, and strong negative space.",
-    captionDraft:
-      "Strategic communication remains central to trust, clarity, and effective public engagement. Today, we celebrate the value of public relations in strengthening institutions.",
-    notes: "Very relevant for communications department.",
-    createdAt: new Date().toISOString(),
-  },
-];
-
 const emptyForm: EventForm = {
   title: "",
   date: "",
   category: "Global Observance",
-  relevance: "High",
+  relevance: "Medium",
   status: "Idea",
   contentAngle: "",
   visualDirection: "",
@@ -131,8 +98,21 @@ const emptyForm: EventForm = {
   notes: "",
 };
 
-function makeId() {
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+function normalizeEvent(item: Partial<GlobalEvent>): GlobalEvent {
+  return {
+    id: item.id ?? "",
+    title: item.title ?? "",
+    date: item.date ?? "",
+    category: (item.category ?? "Global Observance") as EventCategory,
+    relevance: (item.relevance ?? "Medium") as EventRelevance,
+    status: (item.status ?? "Idea") as EventStatus,
+    contentAngle: item.contentAngle ?? "",
+    visualDirection: item.visualDirection ?? "",
+    captionDraft: item.captionDraft ?? "",
+    notes: item.notes ?? "",
+    createdAt: item.createdAt ?? new Date().toISOString(),
+    updatedAt: item.updatedAt ?? new Date().toISOString(),
+  };
 }
 
 function todayStart() {
@@ -145,22 +125,28 @@ function getDaysUntil(dateString: string) {
   if (!dateString) return 999999;
 
   const today = todayStart();
-  const eventDate = new Date(dateString);
-  eventDate.setHours(0, 0, 0, 0);
+  const date = new Date(dateString);
+  date.setHours(0, 0, 0, 0);
 
-  const diff = eventDate.getTime() - today.getTime();
+  if (Number.isNaN(date.getTime())) return 999999;
+
+  const diff = date.getTime() - today.getTime();
   return Math.round(diff / (1000 * 60 * 60 * 24));
 }
 
 function formatDate(dateString: string) {
   if (!dateString) return "No date";
 
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) return "No date";
+
   return new Intl.DateTimeFormat("en-NG", {
     weekday: "short",
     day: "numeric",
     month: "long",
     year: "numeric",
-  }).format(new Date(dateString));
+  }).format(date);
 }
 
 function dateStatus(dateString: string) {
@@ -170,18 +156,16 @@ function dateStatus(dateString: string) {
   if (days < 0) return "Past";
   if (days === 0) return "Today";
   if (days === 1) return "Tomorrow";
-  if (days <= 7) return `In ${days} days`;
-  if (days <= 30) return `In ${days} days`;
   return `In ${days} days`;
 }
 
 function relevanceClass(relevance: EventRelevance) {
   if (relevance === "High") {
-    return "border-[#D8B76A]/25 bg-[#FFF8E1] text-[#8A6B22]";
+    return "border-red-100 bg-red-50 text-red-600";
   }
 
   if (relevance === "Medium") {
-    return "border-[#5B5DF5]/15 bg-[#EEF2FF] text-[#5B5DF5]";
+    return "border-[#D8B76A]/25 bg-[#FFF8E1] text-[#8A6B22]";
   }
 
   return "border-slate-200 bg-slate-100 text-slate-500";
@@ -192,44 +176,60 @@ function statusClass(status: EventStatus) {
     return "border-blue-100 bg-blue-50 text-blue-600";
   }
 
-  if (status === "Approved") {
+  if (status === "Approved" || status === "Drafting") {
     return "border-[#5B5DF5]/15 bg-[#EEF2FF] text-[#5B5DF5]";
-  }
-
-  if (status === "Drafting") {
-    return "border-[#D8B76A]/25 bg-[#FFF8E1] text-[#8A6B22]";
   }
 
   if (status === "Skipped") {
     return "border-slate-200 bg-slate-100 text-slate-500";
   }
 
+  return "border-[#D8B76A]/25 bg-[#FFF8E1] text-[#8A6B22]";
+}
+
+function categoryClass(category: EventCategory) {
+  if (category === "Tax & Revenue") {
+    return "border-[#5B5DF5]/15 bg-[#EEF2FF] text-[#5B5DF5]";
+  }
+
+  if (category === "Media & Communication") {
+    return "border-pink-100 bg-pink-50 text-pink-600";
+  }
+
+  if (category === "National Day") {
+    return "border-blue-100 bg-blue-50 text-blue-600";
+  }
+
+  if (category === "Internal Event") {
+    return "border-[#D8B76A]/25 bg-[#FFF8E1] text-[#8A6B22]";
+  }
+
   return "border-slate-200 bg-white text-slate-500";
 }
 
 function buildSuggestedCaption(event: GlobalEvent | null) {
-  if (!event) return "Select an event to generate a content direction.";
+  if (!event) return "Select an event to preview its content package.";
 
-  const lines: string[] = [];
-
-  lines.push(`${event.title}`);
-  lines.push("");
-  lines.push(event.captionDraft || "Caption draft has not been added yet.");
-  lines.push("");
-
-  if (event.contentAngle) {
-    lines.push(`Content Angle: ${event.contentAngle}`);
-  }
-
-  if (event.visualDirection) {
-    lines.push(`Visual Direction: ${event.visualDirection}`);
-  }
-
-  if (event.notes) {
-    lines.push(`Notes: ${event.notes}`);
-  }
-
-  return lines.join("\n");
+  return [
+    event.title,
+    "",
+    `Date: ${formatDate(event.date)} (${dateStatus(event.date)})`,
+    `Category: ${event.category}`,
+    `Relevance: ${event.relevance}`,
+    `Status: ${event.status}`,
+    "",
+    "Content Angle:",
+    event.contentAngle || "No content angle added.",
+    "",
+    "Visual Direction:",
+    event.visualDirection || "No visual direction added.",
+    "",
+    "Caption Draft:",
+    event.captionDraft || "No caption draft added.",
+    "",
+    "Notes:",
+    event.notes || "No notes added.",
+  ].join("\n");
 }
 
 export function GlobalEventsClient() {
@@ -238,45 +238,58 @@ export function GlobalEventsClient() {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  useEffect(() => {
+  async function loadEvents() {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      setErrorMessage("");
 
-      if (stored) {
-        setEvents(JSON.parse(stored));
-      } else {
-        setEvents(starterEvents);
+      const response = await fetch("/api/events", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to load events.");
       }
-    } catch {
-      setEvents(starterEvents);
+
+      const data = (await response.json()) as EventsApiResponse;
+
+      if (!data.ok || !data.events) {
+        throw new Error(data.message || "Events response was invalid.");
+      }
+
+      const nextEvents = data.events.map(normalizeEvent);
+
+      setEvents(nextEvents);
+
+      if (!selectedId) {
+        setSelectedId(nextEvents[0]?.id ?? null);
+      }
+    } catch (error) {
+      console.error("Failed to load events:", error);
+      setErrorMessage("Events could not be loaded from the database.");
+    } finally {
+      setLoaded(true);
     }
-  }, []);
+  }
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
-  }, [events]);
-
-  const sortedEvents = useMemo(() => {
-    return [...events].sort((a, b) => {
-      const aDays = getDaysUntil(a.date);
-      const bDays = getDaysUntil(b.date);
-
-      if (aDays < 0 && bDays >= 0) return 1;
-      if (bDays < 0 && aDays >= 0) return -1;
-
-      return aDays - bDays;
-    });
-  }, [events]);
+    loadEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filteredEvents = useMemo(() => {
     const search = query.trim().toLowerCase();
 
-    if (!search) return sortedEvents;
+    if (!search) return events;
 
-    return sortedEvents.filter((event) =>
+    return events.filter((event) =>
       [
         event.title,
+        event.date,
         event.category,
         event.relevance,
         event.status,
@@ -289,70 +302,150 @@ export function GlobalEventsClient() {
         .toLowerCase()
         .includes(search)
     );
-  }, [query, sortedEvents]);
+  }, [events, query]);
 
   const selectedEvent = useMemo(() => {
-    if (!selectedId) return sortedEvents[0] ?? null;
-    return events.find((event) => event.id === selectedId) ?? null;
-  }, [events, selectedId, sortedEvents]);
+    if (!selectedId) return filteredEvents[0] ?? null;
 
-  const upcomingEvents = useMemo(() => {
-    return events.filter((event) => {
-      const days = getDaysUntil(event.date);
-      return days >= 0 && days <= 30;
-    });
-  }, [events]);
+    return (
+      events.find((event) => event.id === selectedId) ??
+      filteredEvents[0] ??
+      null
+    );
+  }, [events, filteredEvents, selectedId]);
 
-  const highRelevance = events.filter(
+  const upcomingEvents = events.filter((event) => {
+    const days = getDaysUntil(event.date);
+    return days >= 0 && days <= 30;
+  }).length;
+
+  const todayEvents = events.filter((event) => getDaysUntil(event.date) === 0).length;
+
+  const pastEvents = events.filter((event) => getDaysUntil(event.date) < 0).length;
+
+  const highRelevanceEvents = events.filter(
     (event) => event.relevance === "High"
   ).length;
 
-  const readyOrPosted = events.filter(
+  const approvedEvents = events.filter(
     (event) => event.status === "Approved" || event.status === "Posted"
   ).length;
 
-  const suggestedContent = buildSuggestedCaption(selectedEvent);
+  const exportText = buildSuggestedCaption(selectedEvent);
 
-  function addEvent() {
-    if (!form.title.trim()) return;
+  function updateForm<Key extends keyof EventForm>(
+    key: Key,
+    value: EventForm[Key]
+  ) {
+    setForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
 
-    const newEvent: GlobalEvent = {
-      ...form,
-      id: makeId(),
-      title: form.title.trim(),
-      contentAngle: form.contentAngle.trim(),
-      visualDirection: form.visualDirection.trim(),
-      captionDraft: form.captionDraft.trim(),
-      notes: form.notes.trim(),
-      createdAt: new Date().toISOString(),
-    };
-
-    setEvents((current) => [newEvent, ...current]);
-    setSelectedId(newEvent.id);
-    setForm(emptyForm);
+    setErrorMessage("");
   }
 
-  function removeEvent(id: string) {
-    setEvents((current) => current.filter((event) => event.id !== id));
+  async function addEvent() {
+    if (!form.title.trim()) return;
 
-    if (selectedId === id) {
-      setSelectedId(null);
+    try {
+      setSaving(true);
+      setErrorMessage("");
+
+      const response = await fetch("/api/events", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create event.");
+      }
+
+      const data = (await response.json()) as EventsApiResponse;
+
+      if (!data.ok || !data.event) {
+        throw new Error(data.message || "Events response was invalid.");
+      }
+
+      const newEvent = normalizeEvent(data.event);
+
+      setEvents((current) => [newEvent, ...current]);
+      setSelectedId(newEvent.id);
+      setForm(emptyForm);
+    } catch (error) {
+      console.error("Failed to create event:", error);
+      setErrorMessage("Event could not be saved to the database.");
+    } finally {
+      setSaving(false);
     }
   }
 
-  function updateStatus(id: string, status: EventStatus) {
-    setEvents((current) =>
-      current.map((event) => (event.id === id ? { ...event, status } : event))
-    );
+  async function updateStatus(id: string, status: EventStatus) {
+    try {
+      setErrorMessage("");
+
+      const response = await fetch(`/api/events/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update event.");
+      }
+
+      const data = (await response.json()) as EventsApiResponse;
+
+      if (!data.ok || !data.event) {
+        throw new Error(data.message || "Events response was invalid.");
+      }
+
+      const updatedEvent = normalizeEvent(data.event);
+
+      setEvents((current) =>
+        current.map((event) => (event.id === id ? updatedEvent : event))
+      );
+    } catch (error) {
+      console.error("Failed to update event:", error);
+      setErrorMessage("Event status could not be updated.");
+    }
   }
 
-  async function copyContent() {
-    await navigator.clipboard.writeText(suggestedContent);
+  async function removeEvent(id: string) {
+    try {
+      setErrorMessage("");
+
+      const response = await fetch(`/api/events/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete event.");
+      }
+
+      setEvents((current) => current.filter((event) => event.id !== id));
+
+      if (selectedId === id) {
+        setSelectedId(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete event:", error);
+      setErrorMessage("Event could not be deleted.");
+    }
+  }
+
+  async function copyEvent() {
+    await navigator.clipboard.writeText(exportText);
     setCopied(true);
 
     window.setTimeout(() => {
       setCopied(false);
-    }, 1800);
+    }, 1600);
   }
 
   return (
@@ -362,42 +455,48 @@ export function GlobalEventsClient() {
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-950/[0.08] bg-white/70 px-4 py-2 text-xs font-semibold text-slate-600 shadow-[0_12px_40px_rgba(15,23,42,0.045)]">
-                <CalendarDays size={14} className="text-[#5B5DF5]" />
-                Event Planner
+                <Globe2 size={14} className="text-[#5B5DF5]" />
+                Event Intelligence
               </div>
 
               <h2 className="text-2xl font-semibold tracking-tight text-[#0B0D12]">
-                Add an observance or event
+                Add an event signal
               </h2>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                Store notable days, internal events, and communication
-                opportunities before they surprise you.
+                Save observance days, public communication opportunities,
+                internal events, content angles, and visual directions directly
+                into your Prisma database.
               </p>
             </div>
 
             <button
               onClick={addEvent}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0B0D12] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_55px_rgba(15,23,42,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#171A23]"
+              disabled={saving || !loaded}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0B0D12] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_55px_rgba(15,23,42,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#171A23] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus size={16} />
-              Save Event
+              {saving ? "Saving..." : "Save Event"}
             </button>
           </div>
+
+          {errorMessage ? (
+            <div className="mb-5 rounded-[1.4rem] border border-red-100 bg-red-50 p-4 text-red-600">
+              <div className="flex gap-3">
+                <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                <p className="text-sm leading-6">{errorMessage}</p>
+              </div>
+            </div>
+          ) : null}
 
           <div className="grid gap-3 md:grid-cols-2">
             <label className="space-y-2 md:col-span-2">
               <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Event Name
+                Event Title
               </span>
               <input
                 value={form.title}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    title: event.target.value,
-                  }))
-                }
+                onChange={(event) => updateForm("title", event.target.value)}
                 placeholder="e.g. World Public Relations Day"
                 className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               />
@@ -410,12 +509,7 @@ export function GlobalEventsClient() {
               <input
                 type="date"
                 value={form.date}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    date: event.target.value,
-                  }))
-                }
+                onChange={(event) => updateForm("date", event.target.value)}
                 className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               />
             </label>
@@ -427,10 +521,7 @@ export function GlobalEventsClient() {
               <select
                 value={form.category}
                 onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    category: event.target.value as EventCategory,
-                  }))
+                  updateForm("category", event.target.value as EventCategory)
                 }
                 className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               >
@@ -447,15 +538,12 @@ export function GlobalEventsClient() {
               <select
                 value={form.relevance}
                 onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    relevance: event.target.value as EventRelevance,
-                  }))
+                  updateForm("relevance", event.target.value as EventRelevance)
                 }
                 className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               >
-                {relevanceOptions.map((option) => (
-                  <option key={option}>{option}</option>
+                {relevances.map((relevance) => (
+                  <option key={relevance}>{relevance}</option>
                 ))}
               </select>
             </label>
@@ -467,15 +555,12 @@ export function GlobalEventsClient() {
               <select
                 value={form.status}
                 onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    status: event.target.value as EventStatus,
-                  }))
+                  updateForm("status", event.target.value as EventStatus)
                 }
                 className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               >
-                {statusOptions.map((option) => (
-                  <option key={option}>{option}</option>
+                {statuses.map((status) => (
+                  <option key={status}>{status}</option>
                 ))}
               </select>
             </label>
@@ -487,13 +572,10 @@ export function GlobalEventsClient() {
               <textarea
                 value={form.contentAngle}
                 onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    contentAngle: event.target.value,
-                  }))
+                  updateForm("contentAngle", event.target.value)
                 }
-                placeholder="What should the content say or focus on?"
-                rows={3}
+                placeholder="What should the communication focus on?"
+                rows={4}
                 className="w-full resize-none rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium leading-6 text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               />
             </label>
@@ -505,13 +587,10 @@ export function GlobalEventsClient() {
               <textarea
                 value={form.visualDirection}
                 onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    visualDirection: event.target.value,
-                  }))
+                  updateForm("visualDirection", event.target.value)
                 }
-                placeholder="Describe the design direction for this event."
-                rows={3}
+                placeholder="Describe the design style, scene, poster idea, or video direction..."
+                rows={4}
                 className="w-full resize-none rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium leading-6 text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               />
             </label>
@@ -523,13 +602,10 @@ export function GlobalEventsClient() {
               <textarea
                 value={form.captionDraft}
                 onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    captionDraft: event.target.value,
-                  }))
+                  updateForm("captionDraft", event.target.value)
                 }
-                placeholder="Draft the caption or message for this event."
-                rows={4}
+                placeholder="Draft the post caption or announcement here..."
+                rows={5}
                 className="w-full resize-none rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium leading-6 text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               />
             </label>
@@ -540,13 +616,8 @@ export function GlobalEventsClient() {
               </span>
               <textarea
                 value={form.notes}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    notes: event.target.value,
-                  }))
-                }
-                placeholder="Add any reminders, approvals, or special instructions."
+                onChange={(event) => updateForm("notes", event.target.value)}
+                placeholder="Approval notes, timing, reminders, source ideas, or internal context..."
                 rows={3}
                 className="w-full resize-none rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium leading-6 text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               />
@@ -565,60 +636,53 @@ export function GlobalEventsClient() {
                 Event Radar
               </p>
               <h2 className="mt-1 text-xl font-semibold tracking-tight">
-                Upcoming communication opportunities
+                {events.length} database events
               </h2>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.055] p-4">
-              <p className="text-3xl font-semibold">{events.length}</p>
-              <p className="mt-1 text-xs text-white/38">Events</p>
-            </div>
-
-            <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.055] p-4">
-              <p className="text-3xl font-semibold">{upcomingEvents.length}</p>
-              <p className="mt-1 text-xs text-white/38">30 days</p>
-            </div>
-
-            <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.055] p-4">
-              <p className="text-3xl font-semibold">{highRelevance}</p>
-              <p className="mt-1 text-xs text-white/38">High relevance</p>
-            </div>
+          <div className="grid grid-cols-4 gap-3">
+            <DarkMetric value={todayEvents} label="Today" />
+            <DarkMetric value={upcomingEvents} label="30 Days" />
+            <DarkMetric value={highRelevanceEvents} label="High" />
+            <DarkMetric value={approvedEvents} label="Ready" />
           </div>
 
-          <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-black/25 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/32">
-              Planning note
-            </p>
-
-            <p className="mt-3 text-sm leading-6 text-white/62">
-              Prioritize high-relevance events first. Build captions and visual
-              direction early so designs are ready before the day arrives.
-            </p>
-          </div>
+          <button
+            onClick={loadEvents}
+            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-[#0B0D12] shadow-[0_18px_55px_rgba(255,255,255,0.14)] transition duration-300 hover:-translate-y-0.5"
+          >
+            <RefreshCcw size={16} />
+            Refresh Event Data
+          </button>
         </div>
       </div>
 
       <div className="space-y-5">
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-4">
           <MetricCard
-            title="Total Events"
+            title="Events"
             value={events.length}
-            sub="Saved dates"
+            sub="Database records"
             icon={Globe2}
           />
           <MetricCard
             title="Upcoming"
-            value={upcomingEvents.length}
+            value={upcomingEvents}
             sub="Next 30 days"
-            icon={Clock}
+            icon={CalendarDays}
           />
           <MetricCard
-            title="Ready"
-            value={readyOrPosted}
-            sub="Approved / posted"
-            icon={CheckCircle2}
+            title="High Relevance"
+            value={highRelevanceEvents}
+            sub="Priority moments"
+            icon={Sparkles}
+          />
+          <MetricCard
+            title="Past"
+            value={pastEvents}
+            sub="Needs archive/review"
+            icon={Clock}
           />
         </div>
 
@@ -626,10 +690,11 @@ export function GlobalEventsClient() {
           <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <h2 className="text-xl font-semibold tracking-tight text-[#0B0D12]">
-                Events Directory
+                Event Directory
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Search and manage important dates.
+                Search, preview, update, and delete database-backed event
+                records.
               </p>
             </div>
 
@@ -647,16 +712,28 @@ export function GlobalEventsClient() {
             </div>
           </div>
 
-          {filteredEvents.length === 0 ? (
+          {!loaded ? (
             <div className="rounded-[1.6rem] border border-dashed border-slate-950/[0.12] bg-white/55 p-8 text-center">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#5B5DF5]">
-                <CalendarDays size={20} />
+                <RefreshCcw size={20} />
               </div>
               <h3 className="text-base font-semibold text-[#0B0D12]">
-                No events yet
+                Loading events
               </h3>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Add an observance or internal event to begin planning.
+                Fetching records from the database.
+              </p>
+            </div>
+          ) : filteredEvents.length === 0 ? (
+            <div className="rounded-[1.6rem] border border-dashed border-slate-950/[0.12] bg-white/55 p-8 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#5B5DF5]">
+                <Globe2 size={20} />
+              </div>
+              <h3 className="text-base font-semibold text-[#0B0D12]">
+                No event records found
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Add your first event to begin building the content calendar.
               </p>
             </div>
           ) : (
@@ -676,19 +753,21 @@ export function GlobalEventsClient() {
                     <div className="mb-4 flex flex-col justify-between gap-4 md:flex-row md:items-start">
                       <button
                         onClick={() => setSelectedId(event.id)}
-                        className="flex-1 text-left"
+                        className="flex flex-1 gap-3 text-left"
                       >
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5B5DF5]">
-                          {event.category}
-                        </p>
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950/[0.045] text-slate-700">
+                          <CalendarDays size={18} />
+                        </div>
 
-                        <h3 className="mt-2 text-base font-semibold text-[#0B0D12]">
-                          {event.title}
-                        </h3>
+                        <div>
+                          <h3 className="text-base font-semibold text-[#0B0D12]">
+                            {event.title}
+                          </h3>
 
-                        <p className="mt-1 text-sm font-medium text-slate-400">
-                          {formatDate(event.date)} · {dateStatus(event.date)}
-                        </p>
+                          <p className="mt-1 text-sm font-medium text-slate-400">
+                            {formatDate(event.date)} · {dateStatus(event.date)}
+                          </p>
+                        </div>
                       </button>
 
                       <button
@@ -701,6 +780,14 @@ export function GlobalEventsClient() {
                     </div>
 
                     <div className="mb-4 flex flex-wrap gap-2">
+                      <span
+                        className={`rounded-full border px-3 py-1 text-xs font-semibold ${categoryClass(
+                          event.category
+                        )}`}
+                      >
+                        {event.category}
+                      </span>
+
                       <span
                         className={`rounded-full border px-3 py-1 text-xs font-semibold ${relevanceClass(
                           event.relevance
@@ -719,13 +806,13 @@ export function GlobalEventsClient() {
                     </div>
 
                     {event.contentAngle ? (
-                      <p className="text-sm leading-6 text-slate-500">
+                      <p className="line-clamp-3 text-sm leading-6 text-slate-500">
                         {event.contentAngle}
                       </p>
                     ) : null}
 
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {statusOptions.map((status) => (
+                      {statuses.map((status) => (
                         <button
                           key={status}
                           onClick={() => updateStatus(event.id, status)}
@@ -743,54 +830,46 @@ export function GlobalEventsClient() {
         </div>
 
         <div className="devon-glass rounded-[2.25rem] p-6">
-          <div className="mb-5 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#FFF8E1] text-[#8A6B22]">
-              <Lightbulb size={19} />
-            </div>
-
+          <div className="mb-5 flex items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold tracking-tight text-[#0B0D12]">
                 Content Direction
               </h2>
               <p className="mt-1 text-sm text-slate-400">
-                Select an event and copy its planning note.
+                Select an event and copy its content package.
               </p>
             </div>
-          </div>
 
-          {selectedEvent ? (
-            <div className="mb-4 rounded-[1.55rem] border border-slate-950/[0.08] bg-white/66 p-4 shadow-[0_14px_45px_rgba(15,23,42,0.04)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Selected event
-              </p>
-              <h3 className="mt-2 text-lg font-semibold text-[#0B0D12]">
-                {selectedEvent.title}
-              </h3>
-              <p className="mt-1 text-sm font-medium text-slate-500">
-                {formatDate(selectedEvent.date)} · {selectedEvent.category}
-              </p>
-            </div>
-          ) : null}
+            <button
+              onClick={copyEvent}
+              disabled={!selectedEvent}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0B0D12] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_55px_rgba(15,23,42,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#171A23] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+              {copied ? "Copied" : "Copy Event"}
+            </button>
+          </div>
 
           <div className="rounded-[1.55rem] border border-slate-950/[0.08] bg-white/70 p-4">
-            <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap font-sans text-sm leading-7 text-slate-700">
-              {suggestedContent}
+            <pre className="max-h-[460px] overflow-auto whitespace-pre-wrap font-sans text-sm leading-7 text-slate-700">
+              {exportText}
             </pre>
           </div>
-
-          <button
-            onClick={copyContent}
-            disabled={!selectedEvent}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0B0D12] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_55px_rgba(15,23,42,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#171A23] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
-            {copied ? "Copied" : "Copy Content Direction"}
-          </button>
         </div>
       </div>
     </div>
   );
 }
+
+function DarkMetric({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.055] p-4">
+      <p className="text-3xl font-semibold">{value}</p>
+      <p className="mt-1 text-xs text-white/38">{label}</p>
+    </div>
+  );
+}
+
 function MetricCard({
   title,
   value,

@@ -1,34 +1,36 @@
 import type { Metadata } from "next";
 import {
-  Instrument_Sans,
-  Instrument_Serif,
+  Plus_Jakarta_Sans,
+  Space_Grotesk,
   JetBrains_Mono,
 } from "next/font/google";
 import "./globals.css";
 
-const instrumentSans = Instrument_Sans({
-  variable: "--font-instrument-sans",
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
-  weight: "400",
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
 const jetBrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "DevonOS Command Center",
   description:
-    "A premium communications intelligence operating system for news, social media, birthdays, KPIs, events, and workflow automation.",
+    "A premium communications intelligence operating system built for Big Devon.",
 };
 
 export default function RootLayout({
@@ -37,9 +39,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${instrumentSans.variable} ${instrumentSerif.variable} ${jetBrainsMono.variable} antialiased`}
+        className={`${plusJakarta.variable} ${spaceGrotesk.variable} ${jetBrainsMono.variable} antialiased`}
       >
         {children}
       </body>

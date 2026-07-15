@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const kpis = await prisma.kpiItem.findMany({
+    const events = await prisma.globalEvent.findMany({
       orderBy: {
         createdAt: "desc",
       },
@@ -11,15 +11,15 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
-      kpis,
+      events,
     });
   } catch (error) {
-    console.error("Failed to load KPIs:", error);
+    console.error("Failed to load events:", error);
 
     return NextResponse.json(
       {
         ok: false,
-        message: "Failed to load KPIs.",
+        message: "Failed to load events.",
       },
       { status: 500 }
     );
@@ -30,30 +30,31 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const kpi = await prisma.kpiItem.create({
+    const event = await prisma.globalEvent.create({
       data: {
         title: String(body.title ?? "").trim(),
-        owner: String(body.owner ?? "").trim(),
-        status: String(body.status ?? "Not Started"),
-        priority: String(body.priority ?? "Medium"),
-        dueDate: String(body.dueDate ?? ""),
-        description: String(body.description ?? "").trim(),
-        outcome: String(body.outcome ?? "").trim(),
+        date: String(body.date ?? ""),
+        category: String(body.category ?? "Global Observance"),
+        relevance: String(body.relevance ?? "Medium"),
+        status: String(body.status ?? "Idea"),
+        contentAngle: String(body.contentAngle ?? "").trim(),
+        visualDirection: String(body.visualDirection ?? "").trim(),
+        captionDraft: String(body.captionDraft ?? "").trim(),
         notes: String(body.notes ?? "").trim(),
       },
     });
 
     return NextResponse.json({
       ok: true,
-      kpi,
+      event,
     });
   } catch (error) {
-    console.error("Failed to create KPI:", error);
+    console.error("Failed to create event:", error);
 
     return NextResponse.json(
       {
         ok: false,
-        message: "Failed to create KPI.",
+        message: "Failed to create event.",
       },
       { status: 500 }
     );
