@@ -137,3 +137,17 @@ model ProjectRecord {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+model AutopilotTask {
+  id             String   @id @default(cuid())
+  title          String
+  module         String   @default("")
+  severity       String   @default("medium")
+  status         String   @default("Open")
+  dueDate        String   @default("")
+  detail         String   @default("")
+  action         String   @default("")
+  href           String   @default("")
+  sourceSignalId String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
