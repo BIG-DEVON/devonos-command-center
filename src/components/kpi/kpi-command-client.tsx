@@ -13,7 +13,6 @@ import {
   Plus,
   RefreshCcw,
   Search,
-  Sparkles,
   Target,
   Trash2,
 } from "lucide-react";
@@ -276,9 +275,6 @@ export function KpiCommandClient() {
   }, [filteredKpis, kpis, selectedId]);
 
   const completedKpis = kpis.filter((kpi) => kpi.status === "Completed").length;
-  const delayedKpis = kpis.filter((kpi) => kpi.status === "Delayed").length;
-  const blockedKpis = kpis.filter((kpi) => kpi.status === "Blocked").length;
-  const criticalKpis = kpis.filter((kpi) => kpi.priority === "Critical").length;
 
   const dueSoonKpis = kpis.filter((kpi) => {
     const days = getDaysUntil(kpi.dueDate);

@@ -10,7 +10,6 @@ import {
   Copy,
   Crown,
   ExternalLink,
-  FileText,
   Newspaper,
   Plus,
   Radio,

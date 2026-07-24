@@ -23,13 +23,17 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import {
+  loadWorkspaceCollections,
+  type WorkspaceCollections,
+} from "@/lib/client-workspace";
 
 type ModuleRecord = {
   title: string;
   href: string;
   description: string;
   icon: ElementType;
-  storageKey?: string;
+  dataKey?: keyof WorkspaceCollections;
   tag: string;
 };
 
@@ -46,7 +50,7 @@ const modules: ModuleRecord[] = [
     href: "/news",
     description: "Collect and prepare news updates for internal briefings.",
     icon: FileText,
-    storageKey: "devonos.news-items.v1",
+    dataKey: "news",
     tag: "Briefs",
   },
   {
@@ -54,7 +58,7 @@ const modules: ModuleRecord[] = [
     href: "/social",
     description: "Manage captions, post ideas, approvals, and publishing status.",
     icon: Share2,
-    storageKey: "devonos.social-drafts.v1",
+    dataKey: "social",
     tag: "Publishing",
   },
   {
@@ -62,7 +66,7 @@ const modules: ModuleRecord[] = [
     href: "/kpi",
     description: "Track execution, priorities, completed work, and blockers.",
     icon: Target,
-    storageKey: "devonos.kpis.v1",
+    dataKey: "kpis",
     tag: "Execution",
   },
   {
@@ -70,7 +74,7 @@ const modules: ModuleRecord[] = [
     href: "/events",
     description: "Plan observance days, content angles, and event messaging.",
     icon: CalendarDays,
-    storageKey: "devonos.global-events.v1",
+    dataKey: "events",
     tag: "Planning",
   },
   {
@@ -78,7 +82,7 @@ const modules: ModuleRecord[] = [
     href: "/birthdays",
     description: "Manage birthday profiles, tones, and message generation.",
     icon: Users,
-    storageKey: "devonos.birthdays.v1",
+    dataKey: "birthdays",
     tag: "Culture",
   },
   {
@@ -86,7 +90,7 @@ const modules: ModuleRecord[] = [
     href: "/assets",
     description: "Organize logos, visuals, references, files, and usage notes.",
     icon: Folder,
-    storageKey: "devonos.assets.v1",
+    dataKey: "assets",
     tag: "Creative",
   },
   {
@@ -101,7 +105,7 @@ const modules: ModuleRecord[] = [
     href: "/ai",
     description: "Draft captions, scripts, summaries, prompts, and messages.",
     icon: Bot,
-    storageKey: "devonos.ai-studio.v1",
+    dataKey: "ai",
     tag: "AI",
   },
   {
@@ -123,7 +127,7 @@ const modules: ModuleRecord[] = [
     href: "/projects",
     description: "Control major campaigns, workstreams, and project briefs.",
     icon: Zap,
-    storageKey: "devonos.projects.v1",
+    dataKey: "projects",
     tag: "Projects",
   },
 ];
@@ -161,20 +165,6 @@ const workflows = [
   },
 ];
 
-function safeReadCount(key?: string) {
-  if (!key) return 0;
-
-  try {
-    const stored = localStorage.getItem(key);
-    if (!stored) return 0;
-
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed.length : 0;
-  } catch {
-    return 0;
-  }
-}
-
 function buildChecklist() {
   return [
     "DEVONOS DAILY COMMAND CHECKLIST",
@@ -197,26 +187,33 @@ export function CommandCenterClient() {
   const [copied, setCopied] = useState(false);
   const [lastRefresh, setLastRefresh] = useState("");
 
-  function refreshCounts() {
-    const nextCounts: Record<string, number> = {};
+  async function refreshCounts() {
+    try {
+      const collections = await loadWorkspaceCollections();
+      const nextCounts: Record<string, number> = {};
 
-    modules.forEach((module) => {
-      nextCounts[module.href] = safeReadCount(module.storageKey);
-    });
+      modules.forEach((module) => {
+        nextCounts[module.href] = module.dataKey
+          ? collections[module.dataKey].length
+          : 0;
+      });
 
-    setCounts(nextCounts);
-
-    setLastRefresh(
-      new Intl.DateTimeFormat("en-NG", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }).format(new Date())
-    );
+      setCounts(nextCounts);
+      setLastRefresh(
+        new Intl.DateTimeFormat("en-NG", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }).format(new Date())
+      );
+    } catch (error) {
+      console.error("Failed to refresh command counts:", error);
+      setLastRefresh("Refresh failed");
+    }
   }
 
   useEffect(() => {
-    refreshCounts();
+    void refreshCounts();
   }, []);
 
   const filteredModules = useMemo(() => {
@@ -286,7 +283,7 @@ export function CommandCenterClient() {
 
           <div className="mt-5 grid grid-cols-2 gap-3">
             <button
-              onClick={refreshCounts}
+              onClick={() => void refreshCounts()}
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-[#0B0D12] shadow-[0_18px_55px_rgba(255,255,255,0.14)] transition duration-300 hover:-translate-y-0.5"
             >
               <RefreshCcw size={16} />
@@ -313,7 +310,7 @@ export function CommandCenterClient() {
           <MetricCard
             title="Records"
             value={totalRecords}
-            sub="Browser-saved data"
+            sub="Database records"
             icon={FileText}
           />
           <MetricCard
@@ -325,7 +322,7 @@ export function CommandCenterClient() {
           <MetricCard
             title="Ready"
             value={1}
-            sub="Manual OS active"
+            sub="Workspace online"
             icon={CheckCircle2}
           />
         </div>
@@ -338,18 +335,17 @@ export function CommandCenterClient() {
 
             <div>
               <h2 className="text-xl font-semibold tracking-tight text-[#0B0D12]">
-                System Note
+                Workspace status
               </h2>
               <p className="mt-1 text-sm text-slate-400">
-                DevonOS is currently running in local browser mode.
+                Every core workspace is connected.
               </p>
             </div>
           </div>
 
           <p className="text-sm leading-7 text-slate-500">
-            Your modules are storing records locally for now. Backend setup will
-            later move everything into a real database with login, team access,
-            file uploads, and protected API routes.
+            Records are read from the shared local database, so Search,
+            Calendar, Reports, and Autopilot stay aligned with the work you save.
           </p>
         </div>
       </div>
@@ -399,7 +395,7 @@ export function CommandCenterClient() {
                       {module.tag}
                     </span>
 
-                    {module.storageKey ? (
+                    {module.dataKey ? (
                       <span className="rounded-full border border-[#5B5DF5]/15 bg-[#EEF2FF] px-3 py-1 text-xs font-semibold text-[#5B5DF5]">
                         {count} records
                       </span>

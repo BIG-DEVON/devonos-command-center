@@ -4,7 +4,6 @@ import type { ElementType } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
-  BarChart3,
   CalendarDays,
   CheckCircle2,
   Clock,
@@ -19,6 +18,7 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
+import { loadWorkspaceCollections } from "@/lib/client-workspace";
 
 type ReportMetrics = {
   kpis: number;
@@ -35,14 +35,6 @@ type ReportMetrics = {
   birthdays: number;
 };
 
-const STORAGE_KEYS = {
-  kpis: "devonos.kpis.v1",
-  social: "devonos.social-drafts.v1",
-  assets: "devonos.assets.v1",
-  events: "devonos.global-events.v1",
-  birthdays: "devonos.birthdays.v1",
-};
-
 const emptyMetrics: ReportMetrics = {
   kpis: 0,
   completedKpis: 0,
@@ -57,17 +49,6 @@ const emptyMetrics: ReportMetrics = {
   upcomingEvents: 0,
   birthdays: 0,
 };
-
-function safeReadArray(key: string) {
-  try {
-    const stored = localStorage.getItem(key);
-    if (!stored) return [];
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
 
 function todayStart() {
   const date = new Date();
@@ -189,42 +170,43 @@ export function ReportsCommandClient() {
   const [metrics, setMetrics] = useState<ReportMetrics>(emptyMetrics);
   const [copied, setCopied] = useState(false);
 
-  function refreshMetrics() {
-    const kpis = safeReadArray(STORAGE_KEYS.kpis);
-    const social = safeReadArray(STORAGE_KEYS.social);
-    const assets = safeReadArray(STORAGE_KEYS.assets);
-    const events = safeReadArray(STORAGE_KEYS.events);
-    const birthdays = safeReadArray(STORAGE_KEYS.birthdays);
+  async function refreshMetrics() {
+    try {
+      const { kpis, social, assets, events, birthdays } =
+        await loadWorkspaceCollections();
 
-    const nextMetrics: ReportMetrics = {
-      kpis: kpis.length,
-      completedKpis: kpis.filter((item) => item.status === "Completed").length,
-      delayedKpis: kpis.filter((item) => item.status === "Delayed").length,
-      criticalKpis: kpis.filter((item) => item.priority === "Critical").length,
+      const nextMetrics: ReportMetrics = {
+        kpis: kpis.length,
+        completedKpis: kpis.filter((item) => item.status === "Completed").length,
+        delayedKpis: kpis.filter((item) => item.status === "Delayed").length,
+        criticalKpis: kpis.filter((item) => item.priority === "Critical").length,
 
-      socialDrafts: social.length,
-      approvedPosts: social.filter((item) => item.status === "Approved").length,
-      postedPosts: social.filter((item) => item.status === "Posted").length,
+        socialDrafts: social.length,
+        approvedPosts: social.filter((item) => item.status === "Approved").length,
+        postedPosts: social.filter((item) => item.status === "Posted").length,
 
-      assets: assets.length,
-      readyAssets: assets.filter(
-        (item) => item.status === "Ready" || item.status === "Approved"
-      ).length,
+        assets: assets.length,
+        readyAssets: assets.filter(
+          (item) => item.status === "Ready" || item.status === "Approved"
+        ).length,
 
-      events: events.length,
-      upcomingEvents: events.filter((item) => {
-        const days = getDaysUntil(item.date);
-        return days >= 0 && days <= 30;
-      }).length,
+        events: events.length,
+        upcomingEvents: events.filter((item) => {
+          const days = getDaysUntil(String(item.date ?? ""));
+          return days >= 0 && days <= 30;
+        }).length,
 
-      birthdays: birthdays.length,
-    };
+        birthdays: birthdays.length,
+      };
 
-    setMetrics(nextMetrics);
+      setMetrics(nextMetrics);
+    } catch (error) {
+      console.error("Failed to refresh report metrics:", error);
+    }
   }
 
   useEffect(() => {
-    refreshMetrics();
+    void refreshMetrics();
   }, []);
 
   const commandHealth = getReportHealth(metrics);

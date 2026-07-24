@@ -11,7 +11,6 @@ import {
   Copy,
   Crown,
   Globe2,
-  Lightbulb,
   Plus,
   RefreshCcw,
   Search,

@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   Clipboard,
   Copy,
-  Crown,
   Database,
   FileText,
   Newspaper,
@@ -292,14 +291,13 @@ export function AutopilotActionCenterClient() {
               Autopilot Action Center
             </div>
 
-            <h1 className="devon-v2-premium-heading max-w-4xl text-5xl text-white md:text-7xl">
-              Make DevonOS do the first move.
+            <h1 className="max-w-3xl text-4xl font-semibold leading-[0.95] tracking-[-0.06em] text-white md:text-6xl">
+              Turn signals into next steps.
             </h1>
 
             <p className="mt-6 max-w-2xl text-base font-medium leading-8 text-white/62 md:text-lg">
-              This is where DevonOS stops being only a dashboard and starts
-              reducing your workload by creating drafts, briefs, and next-step
-              actions from your own database.
+              Create the first draft, shape the brief, and move the right work
+              forward from the records already in your workspace.
             </p>
 
             <div className="mt-8 grid gap-3 md:grid-cols-4">

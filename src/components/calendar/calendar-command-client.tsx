@@ -18,6 +18,10 @@ import {
   Target,
   Users,
 } from "lucide-react";
+import {
+  loadWorkspaceCollections,
+  type WorkspaceCollections,
+} from "@/lib/client-workspace";
 
 type CalendarSource = "Events" | "Social" | "KPI" | "Birthdays";
 
@@ -36,25 +40,6 @@ type CalendarItem = {
 type TimeFilter = "All" | "Today" | "7 Days" | "30 Days" | "Past";
 
 const timeFilters: TimeFilter[] = ["All", "Today", "7 Days", "30 Days", "Past"];
-
-const STORAGE_KEYS = {
-  events: "devonos.global-events.v1",
-  social: "devonos.social-drafts.v1",
-  kpis: "devonos.kpis.v1",
-  birthdays: "devonos.birthdays.v1",
-};
-
-function safeReadArray(key: string): Record<string, unknown>[] {
-  try {
-    const stored = localStorage.getItem(key);
-    if (!stored) return [];
-
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
 
 function stringValue(value: unknown) {
   if (typeof value === "string") return value;
@@ -204,8 +189,8 @@ function timeFilterClass(filter: TimeFilter, active: TimeFilter) {
   return "border-slate-950/[0.08] bg-white/72 text-slate-500 hover:bg-white hover:text-[#0B0D12]";
 }
 
-function buildCalendarIndex(): CalendarItem[] {
-  const events = safeReadArray(STORAGE_KEYS.events).map((item, index) => {
+function buildCalendarIndex(collections: WorkspaceCollections): CalendarItem[] {
+  const events = collections.events.map((item, index) => {
     const title =
       pickString(item, ["title", "name"]) || `Event ${index + 1}`;
     const date = normalizeDate(pickString(item, ["date"]));
@@ -231,7 +216,7 @@ function buildCalendarIndex(): CalendarItem[] {
     };
   });
 
-  const social = safeReadArray(STORAGE_KEYS.social)
+  const social = collections.social
     .filter((item) => pickString(item, ["scheduledDate"]))
     .map((item, index) => {
       const title =
@@ -255,7 +240,7 @@ function buildCalendarIndex(): CalendarItem[] {
       };
     });
 
-  const kpis = safeReadArray(STORAGE_KEYS.kpis)
+  const kpis = collections.kpis
     .filter((item) => pickString(item, ["dueDate", "date", "deadline"]))
     .map((item, index) => {
       const title =
@@ -280,7 +265,7 @@ function buildCalendarIndex(): CalendarItem[] {
       };
     });
 
-  const birthdays = safeReadArray(STORAGE_KEYS.birthdays).map((item, index) => {
+  const birthdays = collections.birthdays.map((item, index) => {
     const title =
       pickString(item, ["name", "title"]) || `Birthday Profile ${index + 1}`;
     const date = birthdayDateForThisYear(item);
@@ -334,22 +319,28 @@ export function CalendarCommandClient() {
   const [copied, setCopied] = useState(false);
   const [lastRefresh, setLastRefresh] = useState("");
 
-  function refreshCalendar() {
-    const nextItems = buildCalendarIndex();
-    setItems(nextItems);
-    setSelectedId(nextItems[0]?.id ?? null);
+  async function refreshCalendar() {
+    try {
+      const collections = await loadWorkspaceCollections();
+      const nextItems = buildCalendarIndex(collections);
+      setItems(nextItems);
+      setSelectedId(nextItems[0]?.id ?? null);
 
-    setLastRefresh(
-      new Intl.DateTimeFormat("en-NG", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }).format(new Date())
-    );
+      setLastRefresh(
+        new Intl.DateTimeFormat("en-NG", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }).format(new Date())
+      );
+    } catch (error) {
+      console.error("Failed to refresh calendar:", error);
+      setLastRefresh("Refresh failed");
+    }
   }
 
   useEffect(() => {
-    refreshCalendar();
+    void refreshCalendar();
   }, []);
 
   const filteredItems = useMemo(() => {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { localDateKey } from "@/lib/date";
 
 type SignalSeverity = "critical" | "high" | "medium" | "low";
 
@@ -44,7 +45,7 @@ type AutopilotAction =
   | "create_ai_review_draft";
 
 function todayDate() {
-  return new Date().toISOString().slice(0, 10);
+  return localDateKey();
 }
 
 function formatDate() {

@@ -137,6 +137,7 @@ model ProjectRecord {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
 model AutopilotTask {
   id             String   @id @default(cuid())
   title          String

@@ -1,0 +1,319 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { localDateKey } from "@/lib/date";
+
+type CreatedDraft = {
+  type: string;
+  title: string;
+  href: string;
+};
+
+function todayStart() {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function todayDate() {
+  return localDateKey();
+}
+
+function getDaysUntil(dateString: string) {
+  if (!dateString) return 999999;
+
+  const today = todayStart();
+  const date = new Date(dateString);
+  date.setHours(0, 0, 0, 0);
+
+  if (Number.isNaN(date.getTime())) return 999999;
+
+  return Math.round((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function getNextBirthday(month: number, day: number) {
+  const today = todayStart();
+
+  let birthday = new Date(today.getFullYear(), month - 1, day);
+  birthday.setHours(0, 0, 0, 0);
+
+  if (birthday.getTime() < today.getTime()) {
+    birthday = new Date(today.getFullYear() + 1, month - 1, day);
+    birthday.setHours(0, 0, 0, 0);
+  }
+
+  return birthday;
+}
+
+function getDaysUntilBirthday(month: number, day: number) {
+  const today = todayStart();
+  const birthday = getNextBirthday(month, day);
+
+  return Math.round(
+    (birthday.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+  );
+}
+
+function formatDate(dateString: string) {
+  if (!dateString) return "No date";
+
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) return "No date";
+
+  return new Intl.DateTimeFormat("en-NG", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatBirthday(month: number, day: number) {
+  const birthday = getNextBirthday(month, day);
+
+  return new Intl.DateTimeFormat("en-NG", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(birthday);
+}
+
+function birthdayIsoDate(month: number, day: number) {
+  return localDateKey(getNextBirthday(month, day));
+}
+
+function cleanTitle(value: string, maxLength = 62) {
+  const clean = value.trim().replace(/\s+/g, " ");
+
+  if (clean.length <= maxLength) return clean;
+
+  return `${clean.slice(0, maxLength).trim()}...`;
+}
+
+async function socialDraftExists(title: string) {
+  const existing = await prisma.socialDraft.findFirst({
+    where: {
+      title,
+    },
+  });
+
+  return Boolean(existing);
+}
+
+export async function POST() {
+  try {
+    const [birthdays, events, newsItems] = await Promise.all([
+      prisma.birthdayProfile.findMany({
+        orderBy: {
+          createdAt: "desc",
+        },
+      }),
+      prisma.globalEvent.findMany({
+        orderBy: {
+          createdAt: "desc",
+        },
+      }),
+      prisma.newsItem.findMany({
+        orderBy: {
+          createdAt: "desc",
+        },
+      }),
+    ]);
+
+    const created: CreatedDraft[] = [];
+    const skipped: CreatedDraft[] = [];
+
+    const upcomingBirthdays = birthdays
+      .filter((birthday) => {
+        const days = getDaysUntilBirthday(birthday.month, birthday.day);
+        return days >= 0 && days <= 7;
+      })
+      .slice(0, 8);
+
+    for (const birthday of upcomingBirthdays) {
+      const scheduledDate = birthdayIsoDate(birthday.month, birthday.day);
+      const title = `Birthday Draft - ${birthday.name} - ${scheduledDate}`;
+
+      if (await socialDraftExists(title)) {
+        skipped.push({
+          type: "Birthday",
+          title,
+          href: "/social",
+        });
+        continue;
+      }
+
+      const roleLine = birthday.role ? `, ${birthday.role}` : "";
+      const birthdayDate = formatBirthday(birthday.month, birthday.day);
+
+      await prisma.socialDraft.create({
+        data: {
+          title,
+          campaign: "Autopilot Content Factory",
+          platform: "Instagram",
+          status: "Draft",
+          scheduledDate,
+          caption: [
+            `Happy Birthday to ${birthday.name}${roleLine}.`,
+            "",
+            "Today, we celebrate you and appreciate your dedication, service, and valuable contributions.",
+            "",
+            "Wishing you a wonderful new year filled with joy, strength, excellence, and greater achievements.",
+            "",
+            birthday.notes ? `Note for refinement: ${birthday.notes}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          visualDirection: [
+            "Create a premium birthday appreciation graphic.",
+            "Use a clean white-and-blue visual direction, tasteful celebratory accents, elegant typography, and a warm official tone.",
+            "Avoid clutter, avoid cheap template styling, and do not use green.",
+            birthday.photoUrl
+              ? "Use the provided photo reference if available."
+              : "Leave space for a portrait/photo if needed.",
+          ].join("\n"),
+          hashtags: "#Birthday #Celebration #DevonOS",
+          notes: `Generated by DevonOS Content Factory for ${birthdayDate}. Review before posting.`,
+        },
+      });
+
+      created.push({
+        type: "Birthday",
+        title,
+        href: "/social",
+      });
+    }
+
+    const upcomingEvents = events
+      .filter((event) => {
+        const days = getDaysUntil(event.date);
+        return days >= 0 && days <= 10 && event.status !== "Posted";
+      })
+      .slice(0, 8);
+
+    for (const event of upcomingEvents) {
+      const title = `Event Draft - ${event.title} - ${event.date || todayDate()}`;
+
+      if (await socialDraftExists(title)) {
+        skipped.push({
+          type: "Event",
+          title,
+          href: "/social",
+        });
+        continue;
+      }
+
+      await prisma.socialDraft.create({
+        data: {
+          title,
+          campaign: "Autopilot Content Factory",
+          platform: "Instagram",
+          status: "Draft",
+          scheduledDate: event.date || todayDate(),
+          caption:
+            event.captionDraft ||
+            [
+              event.title,
+              "",
+              `Date: ${formatDate(event.date)}`,
+              "",
+              event.contentAngle ||
+                "This is a relevant communication moment that can be developed into an official social media update.",
+              "",
+              "Review the angle, confirm accuracy, and polish this into a final approved caption.",
+            ].join("\n"),
+          visualDirection:
+            event.visualDirection ||
+            [
+              "Create a premium event awareness graphic.",
+              "Use a clean white-and-blue design direction, elegant card layout, refined typography, and subtle blue/violet/cyan accents.",
+              "Keep it official, modern, readable, and not crowded. No green.",
+            ].join("\n"),
+          hashtags: "#Awareness #Communications #DevonOS",
+          notes: `Generated by DevonOS Content Factory from Global Events. Relevance: ${event.relevance}. Review before posting.`,
+        },
+      });
+
+      created.push({
+        type: "Event",
+        title,
+        href: "/social",
+      });
+    }
+
+    const highNewsItems = newsItems
+      .filter((item) => item.relevance === "High")
+      .slice(0, 8);
+
+    for (const newsItem of highNewsItems) {
+      const title = `News Draft - ${cleanTitle(newsItem.headline)}`;
+
+      if (await socialDraftExists(title)) {
+        skipped.push({
+          type: "News",
+          title,
+          href: "/social",
+        });
+        continue;
+      }
+
+      await prisma.socialDraft.create({
+        data: {
+          title,
+          campaign: "Autopilot Content Factory",
+          platform: "X",
+          status: "Draft",
+          scheduledDate: todayDate(),
+          caption: [
+            newsItem.headline,
+            "",
+            newsItem.summary || "Summary to be refined after verification.",
+            "",
+            newsItem.source ? `Source: ${newsItem.source}` : "",
+            newsItem.url ? `Reference: ${newsItem.url}` : "",
+            "",
+            "Review, verify from official sources, and refine before publishing.",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          visualDirection: [
+            "Create a clean news update card.",
+            "Use a premium white-and-blue layout with a clear headline hierarchy, subtle data/news accents, and strong readability.",
+            "Keep it official and restrained. No green.",
+          ].join("\n"),
+          hashtags: "#News #Update #Communications",
+          notes:
+            "Generated by DevonOS Content Factory from a high-relevance news signal. Verify before use.",
+        },
+      });
+
+      created.push({
+        type: "News",
+        title,
+        href: "/social",
+      });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      createdCount: created.length,
+      skippedCount: skipped.length,
+      created,
+      skipped,
+      message:
+        created.length > 0
+          ? `Content Factory created ${created.length} new social draft(s) and skipped ${skipped.length} duplicate(s).`
+          : `No new social drafts were needed. DevonOS skipped ${skipped.length} duplicate(s).`,
+    });
+  } catch (error) {
+    console.error("Content Factory failed:", error);
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "DevonOS Content Factory could not create drafts.",
+      },
+      { status: 500 }
+    );
+  }
+}

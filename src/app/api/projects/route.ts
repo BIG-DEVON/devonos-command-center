@@ -1,41 +1,47 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-type RouteContext = {
-  params: Promise<{
-    id: string;
-  }>;
-};
-
-export async function PATCH(request: Request, context: RouteContext) {
+export async function GET() {
   try {
-    const { id } = await context.params;
+    const projects = await prisma.projectRecord.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return NextResponse.json({
+      ok: true,
+      projects,
+    });
+  } catch (error) {
+    console.error("Failed to load projects:", error);
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "Failed to load projects.",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
     const body = await request.json();
 
-    const project = await prisma.projectRecord.update({
-      where: {
-        id,
-      },
+    const project = await prisma.projectRecord.create({
       data: {
-        name: body.name === undefined ? undefined : String(body.name).trim(),
-        owner: body.owner === undefined ? undefined : String(body.owner).trim(),
-        category:
-          body.category === undefined ? undefined : String(body.category).trim(),
-        status: body.status === undefined ? undefined : String(body.status),
-        priority:
-          body.priority === undefined ? undefined : String(body.priority),
-        startDate:
-          body.startDate === undefined ? undefined : String(body.startDate),
-        dueDate: body.dueDate === undefined ? undefined : String(body.dueDate),
-        objective:
-          body.objective === undefined
-            ? undefined
-            : String(body.objective).trim(),
-        deliverables:
-          body.deliverables === undefined
-            ? undefined
-            : String(body.deliverables).trim(),
-        notes: body.notes === undefined ? undefined : String(body.notes).trim(),
+        name: String(body.name ?? "").trim(),
+        owner: String(body.owner ?? "").trim(),
+        category: String(body.category ?? "General").trim(),
+        status: String(body.status ?? "Planning"),
+        priority: String(body.priority ?? "Medium"),
+        startDate: String(body.startDate ?? ""),
+        dueDate: String(body.dueDate ?? ""),
+        objective: String(body.objective ?? "").trim(),
+        deliverables: String(body.deliverables ?? "").trim(),
+        notes: String(body.notes ?? "").trim(),
       },
     });
 
@@ -44,38 +50,12 @@ export async function PATCH(request: Request, context: RouteContext) {
       project,
     });
   } catch (error) {
-    console.error("Failed to update project:", error);
+    console.error("Failed to create project:", error);
 
     return NextResponse.json(
       {
         ok: false,
-        message: "Failed to update project.",
-      },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(_request: Request, context: RouteContext) {
-  try {
-    const { id } = await context.params;
-
-    await prisma.projectRecord.delete({
-      where: {
-        id,
-      },
-    });
-
-    return NextResponse.json({
-      ok: true,
-    });
-  } catch (error) {
-    console.error("Failed to delete project:", error);
-
-    return NextResponse.json(
-      {
-        ok: false,
-        message: "Failed to delete project.",
+        message: "Failed to create project.",
       },
       { status: 500 }
     );

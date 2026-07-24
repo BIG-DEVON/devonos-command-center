@@ -1,36 +1,43 @@
-import type { Metadata } from "next";
-import {
-  Plus_Jakarta_Sans,
-  Space_Grotesk,
-  JetBrains_Mono,
-} from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  display: "swap",
-});
-
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
-const jetBrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
 export const metadata: Metadata = {
-  title: "DevonOS Command Center",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+  ),
+  applicationName: "DevonOS",
+  title: {
+    default: "DevonOS Command Center",
+    template: "%s · DevonOS",
+  },
   description:
-    "A premium communications intelligence operating system built for Big Devon.",
+    "A focused operating system for communications, projects, intelligence, and daily execution.",
+  category: "productivity",
+  openGraph: {
+    type: "website",
+    title: "DevonOS Command Center",
+    description: "Clarity for the work that matters.",
+    siteName: "DevonOS",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "DevonOS Command Center",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DevonOS Command Center",
+    description: "Clarity for the work that matters.",
+    images: ["/og.png"],
+  },
+};
+
+export const viewport: Viewport = {
+  colorScheme: "light",
+  themeColor: "#f6f6f8",
 };
 
 export default function RootLayout({
@@ -40,11 +47,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${plusJakarta.variable} ${spaceGrotesk.variable} ${jetBrainsMono.variable} antialiased`}
-      >
-        {children}
-      </body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

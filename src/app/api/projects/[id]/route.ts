@@ -12,41 +12,44 @@ export async function PATCH(request: Request, context: RouteContext) {
     const { id } = await context.params;
     const body = await request.json();
 
-    const draft = await prisma.aiDraft.update({
+    const project = await prisma.projectRecord.update({
       where: {
         id,
       },
       data: {
-        title: body.title === undefined ? undefined : String(body.title).trim(),
+        name: body.name === undefined ? undefined : String(body.name).trim(),
+        owner: body.owner === undefined ? undefined : String(body.owner).trim(),
         category:
-          body.category === undefined ? undefined : String(body.category),
-        tone: body.tone === undefined ? undefined : String(body.tone),
+          body.category === undefined ? undefined : String(body.category).trim(),
         status: body.status === undefined ? undefined : String(body.status),
-        instruction:
-          body.instruction === undefined
+        priority:
+          body.priority === undefined ? undefined : String(body.priority),
+        startDate:
+          body.startDate === undefined ? undefined : String(body.startDate),
+        dueDate: body.dueDate === undefined ? undefined : String(body.dueDate),
+        objective:
+          body.objective === undefined
             ? undefined
-            : String(body.instruction).trim(),
-        sourceText:
-          body.sourceText === undefined
+            : String(body.objective).trim(),
+        deliverables:
+          body.deliverables === undefined
             ? undefined
-            : String(body.sourceText).trim(),
-        output:
-          body.output === undefined ? undefined : String(body.output).trim(),
+            : String(body.deliverables).trim(),
         notes: body.notes === undefined ? undefined : String(body.notes).trim(),
       },
     });
 
     return NextResponse.json({
       ok: true,
-      draft,
+      project,
     });
   } catch (error) {
-    console.error("Failed to update AI draft:", error);
+    console.error("Failed to update project:", error);
 
     return NextResponse.json(
       {
         ok: false,
-        message: "Failed to update AI draft.",
+        message: "Failed to update project.",
       },
       { status: 500 }
     );
@@ -57,7 +60,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
 
-    await prisma.aiDraft.delete({
+    await prisma.projectRecord.delete({
       where: {
         id,
       },
@@ -67,12 +70,12 @@ export async function DELETE(_request: Request, context: RouteContext) {
       ok: true,
     });
   } catch (error) {
-    console.error("Failed to delete AI draft:", error);
+    console.error("Failed to delete project:", error);
 
     return NextResponse.json(
       {
         ok: false,
-        message: "Failed to delete AI draft.",
+        message: "Failed to delete project.",
       },
       { status: 500 }
     );

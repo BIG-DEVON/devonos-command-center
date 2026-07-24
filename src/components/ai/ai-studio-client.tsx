@@ -8,7 +8,6 @@ import {
   Bot,
   CheckCircle2,
   Copy,
-  Crown,
   FileText,
   Lightbulb,
   MessageSquareText,
@@ -392,8 +391,6 @@ export function AiStudioClient() {
   const reviewedDrafts = drafts.filter(
     (draft) => draft.status === "Reviewed"
   ).length;
-
-  const usedDrafts = drafts.filter((draft) => draft.status === "Used").length;
 
   const designPrompts = drafts.filter(
     (draft) => draft.category === "Design Prompt"

@@ -4,7 +4,6 @@ import type { ElementType } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
-  CalendarDays,
   CheckCircle2,
   Copy,
   Crown,

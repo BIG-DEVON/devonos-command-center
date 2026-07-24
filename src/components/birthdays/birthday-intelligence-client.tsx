@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowUpRight,
   Cake,
   CalendarDays,
   Check,
@@ -31,7 +30,14 @@ type BirthdayProfile = {
 
 type BirthdayForm = Omit<BirthdayProfile, "id" | "createdAt">;
 
-const STORAGE_KEY = "devonos.birthdays.v1";
+type BirthdayApiResponse = {
+  ok: boolean;
+  profiles?: BirthdayProfile[];
+  profile?: BirthdayProfile;
+  message?: string;
+};
+
+const LEGACY_STORAGE_KEY = "devonos.birthdays.v1";
 
 const categories = [
   "Department",
@@ -67,10 +73,6 @@ const emptyForm: BirthdayForm = {
   notes: "",
   preferredTone: "Formal",
 };
-
-function makeId() {
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
 
 function todayStart() {
   const date = new Date();
@@ -154,21 +156,72 @@ export function BirthdayIntelligenceClient() {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  useEffect(() => {
+  async function loadProfiles() {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setProfiles(JSON.parse(stored));
+      setErrorMessage("");
+      const response = await fetch("/api/birthdays", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!response.ok) throw new Error("Failed to load profiles.");
+
+      const data = (await response.json()) as BirthdayApiResponse;
+      if (!data.ok || !data.profiles) {
+        throw new Error(data.message || "Invalid birthday response.");
       }
-    } catch {
-      setProfiles([]);
+
+      let nextProfiles = data.profiles;
+
+      if (nextProfiles.length === 0) {
+        const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
+        const legacyProfiles = legacyRaw
+          ? (JSON.parse(legacyRaw) as BirthdayProfile[])
+          : [];
+
+        if (Array.isArray(legacyProfiles) && legacyProfiles.length) {
+          const migrated = await Promise.all(
+            legacyProfiles.map(async (profile) => {
+              const migrationResponse = await fetch("/api/birthdays", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(profile),
+              });
+
+              if (!migrationResponse.ok) return null;
+              const migrationData =
+                (await migrationResponse.json()) as BirthdayApiResponse;
+              return migrationData.profile ?? null;
+            })
+          );
+
+          nextProfiles = migrated.filter(
+            (profile): profile is BirthdayProfile => profile !== null
+          );
+
+          if (nextProfiles.length === legacyProfiles.length) {
+            localStorage.removeItem(LEGACY_STORAGE_KEY);
+          }
+        }
+      }
+
+      setProfiles(nextProfiles);
+      setSelectedId((current) => current ?? nextProfiles[0]?.id ?? null);
+    } catch (error) {
+      console.error("Failed to load birthday profiles:", error);
+      setErrorMessage("Birthday profiles could not be loaded.");
+    } finally {
+      setLoaded(true);
     }
-  }, []);
+  }
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles));
-  }, [profiles]);
+    void loadProfiles();
+  }, []);
 
   const sortedProfiles = useMemo(() => {
     return [...profiles].sort((a, b) => getDaysUntil(a) - getDaysUntil(b));
@@ -213,29 +266,52 @@ export function BirthdayIntelligenceClient() {
     ? buildBirthdayMessage(selectedProfile)
     : "Add a birthday profile to generate a message.";
 
-  function addProfile() {
+  async function addProfile() {
     if (!form.name.trim()) return;
 
-    const newProfile: BirthdayProfile = {
-      ...form,
-      id: makeId(),
-      name: form.name.trim(),
-      role: form.role.trim(),
-      photoUrl: form.photoUrl?.trim(),
-      notes: form.notes?.trim(),
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      setSaving(true);
+      setErrorMessage("");
+      const response = await fetch("/api/birthdays", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    setProfiles((current) => [...current, newProfile]);
-    setSelectedId(newProfile.id);
-    setForm(emptyForm);
+      if (!response.ok) throw new Error("Failed to save profile.");
+      const data = (await response.json()) as BirthdayApiResponse;
+      if (!data.ok || !data.profile) {
+        throw new Error(data.message || "Invalid birthday response.");
+      }
+
+      setProfiles((current) => [...current, data.profile as BirthdayProfile]);
+      setSelectedId(data.profile.id);
+      setForm(emptyForm);
+    } catch (error) {
+      console.error("Failed to create birthday profile:", error);
+      setErrorMessage("The birthday profile could not be saved.");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function removeProfile(id: string) {
-    setProfiles((current) => current.filter((profile) => profile.id !== id));
+  async function removeProfile(id: string) {
+    try {
+      setErrorMessage("");
+      const response = await fetch(`/api/birthdays/${id}`, {
+        method: "DELETE",
+      });
 
-    if (selectedId === id) {
-      setSelectedId(null);
+      if (!response.ok) throw new Error("Failed to remove profile.");
+
+      setProfiles((current) =>
+        current.filter((profile) => profile.id !== id)
+      );
+
+      if (selectedId === id) setSelectedId(null);
+    } catch (error) {
+      console.error("Failed to remove birthday profile:", error);
+      setErrorMessage("The birthday profile could not be removed.");
     }
   }
 
@@ -251,6 +327,15 @@ export function BirthdayIntelligenceClient() {
   return (
     <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
       <div className="space-y-5">
+        {errorMessage ? (
+          <div
+            role="alert"
+            className="rounded-[16px] border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700"
+          >
+            {errorMessage}
+          </div>
+        ) : null}
+
         <div className="devon-glass rounded-[2.25rem] p-6">
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
@@ -270,11 +355,13 @@ export function BirthdayIntelligenceClient() {
             </div>
 
             <button
-              onClick={addProfile}
+              type="button"
+              onClick={() => void addProfile()}
+              disabled={saving}
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0B0D12] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_55px_rgba(15,23,42,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#171A23]"
             >
               <Plus size={16} />
-              Save Profile
+              {saving ? "Saving…" : "Save Profile"}
             </button>
           </div>
 
@@ -647,28 +734,19 @@ export function BirthdayIntelligenceClient() {
           </button>
         </div>
 
-        <div className="rounded-[2rem] border border-[#D8B76A]/25 bg-[#FFF8E1]/70 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.055)] backdrop-blur-2xl">
-          <div className="flex gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-[#8A6B22]">
-              <CalendarDays size={18} />
-            </div>
-
-            <div>
-              <h3 className="text-sm font-semibold text-[#8A6B22]">
-                Later upgrade
-              </h3>
-              <p className="mt-1 text-sm leading-6 text-[#8A6B22]/80">
-                We’ll add automatic reminders at 12:00 a.m., 7:00 a.m., and
-                9:00 a.m. when the backend notification engine is ready.
-              </p>
-            </div>
+        <div className="devon-surface flex items-center gap-3 p-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-emerald-50 text-emerald-600">
+            <CalendarDays size={17} />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-[#3c3c42]">
+              {loaded ? `${profiles.length} profiles synced` : "Syncing profiles…"}
+            </p>
+            <p className="mt-0.5 text-xs text-[#92929a]">
+              Dates are included automatically in Calendar.
+            </p>
           </div>
         </div>
-
-        <button className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-950/[0.08] bg-white/72 px-5 py-3 text-sm font-semibold text-slate-700 shadow-[0_16px_50px_rgba(15,23,42,0.055)] transition duration-300 hover:-translate-y-0.5 hover:bg-white hover:text-[#0B0D12]">
-          Reminder engine coming next
-          <ArrowUpRight size={16} />
-        </button>
       </div>
     </div>
   );

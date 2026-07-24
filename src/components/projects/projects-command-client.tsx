@@ -11,15 +11,12 @@ import {
   Clock,
   Copy,
   Crown,
-  FileText,
   Flag,
   Plus,
   RefreshCcw,
   Search,
   Sparkles,
-  Target,
   Trash2,
-  Users,
 } from "lucide-react";
 
 type ProjectStatus =
@@ -303,10 +300,6 @@ export function ProjectsCommandClient() {
     (project) => project.status === "Completed"
   ).length;
 
-  const pausedProjects = projects.filter(
-    (project) => project.status === "Paused"
-  ).length;
-
   const criticalProjects = projects.filter(
     (project) => project.priority === "Critical"
   ).length;
@@ -314,11 +307,6 @@ export function ProjectsCommandClient() {
   const dueSoonProjects = projects.filter((project) => {
     const days = getDaysUntil(project.dueDate);
     return days >= 0 && days <= 14 && project.status !== "Completed";
-  }).length;
-
-  const overdueProjects = projects.filter((project) => {
-    const days = getDaysUntil(project.dueDate);
-    return days < 0 && project.status !== "Completed";
   }).length;
 
   const completionRate =

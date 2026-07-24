@@ -6,20 +6,24 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
   Bot,
+  Briefcase,
   CalendarDays,
   CheckCircle2,
   Copy,
   Crown,
   Database,
-  FileText,
   Folder,
+  Newspaper,
   RefreshCcw,
   Search,
   Share2,
-  Sparkles,
   Target,
   Users,
 } from "lucide-react";
+import {
+  loadWorkspaceCollections,
+  type WorkspaceCollections,
+} from "@/lib/client-workspace";
 
 type ModuleFilter =
   | "All"
@@ -28,6 +32,8 @@ type ModuleFilter =
   | "Assets"
   | "Events"
   | "Birthdays"
+  | "Projects"
+  | "News"
   | "AI";
 
 type SearchResult = {
@@ -49,29 +55,10 @@ const moduleFilters: ModuleFilter[] = [
   "Assets",
   "Events",
   "Birthdays",
+  "Projects",
+  "News",
   "AI",
 ];
-
-const STORAGE_KEYS = {
-  kpis: "devonos.kpis.v1",
-  social: "devonos.social-drafts.v1",
-  assets: "devonos.assets.v1",
-  events: "devonos.global-events.v1",
-  birthdays: "devonos.birthdays.v1",
-  ai: "devonos.ai-studio.v1",
-};
-
-function safeReadArray(key: string): Record<string, unknown>[] {
-  try {
-    const stored = localStorage.getItem(key);
-    if (!stored) return [];
-
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
 
 function stringValue(value: unknown) {
   if (typeof value === "string") return value;
@@ -123,6 +110,8 @@ function moduleIcon(module: SearchResult["module"]) {
   if (module === "Assets") return Folder;
   if (module === "Events") return CalendarDays;
   if (module === "Birthdays") return Users;
+  if (module === "Projects") return Briefcase;
+  if (module === "News") return Newspaper;
   return Bot;
 }
 
@@ -147,6 +136,14 @@ function moduleClass(module: SearchResult["module"]) {
     return "border-red-100 bg-red-50 text-red-600";
   }
 
+  if (module === "Projects") {
+    return "border-violet-100 bg-violet-50 text-violet-600";
+  }
+
+  if (module === "News") {
+    return "border-cyan-100 bg-cyan-50 text-cyan-700";
+  }
+
   return "border-slate-200 bg-slate-100 text-slate-600";
 }
 
@@ -158,8 +155,8 @@ function filterClass(filter: ModuleFilter, active: ModuleFilter) {
   return "border-slate-950/[0.08] bg-white/72 text-slate-500 hover:bg-white hover:text-[#0B0D12]";
 }
 
-function buildSearchIndex(): SearchResult[] {
-  const kpis = safeReadArray(STORAGE_KEYS.kpis).map((item, index) => {
+function buildSearchIndex(collections: WorkspaceCollections): SearchResult[] {
+  const kpis = collections.kpis.map((item, index) => {
     const title =
       pickString(item, ["title", "name", "objective"]) || `KPI Item ${index + 1}`;
 
@@ -186,7 +183,7 @@ function buildSearchIndex(): SearchResult[] {
     };
   });
 
-  const social = safeReadArray(STORAGE_KEYS.social).map((item, index) => {
+  const social = collections.social.map((item, index) => {
     const title =
       pickString(item, ["title", "campaign"]) || `Social Draft ${index + 1}`;
 
@@ -208,7 +205,7 @@ function buildSearchIndex(): SearchResult[] {
     };
   });
 
-  const assets = safeReadArray(STORAGE_KEYS.assets).map((item, index) => {
+  const assets = collections.assets.map((item, index) => {
     const title =
       pickString(item, ["name", "title"]) || `Asset Record ${index + 1}`;
 
@@ -230,7 +227,7 @@ function buildSearchIndex(): SearchResult[] {
     };
   });
 
-  const events = safeReadArray(STORAGE_KEYS.events).map((item, index) => {
+  const events = collections.events.map((item, index) => {
     const title =
       pickString(item, ["title", "name"]) || `Event ${index + 1}`;
 
@@ -257,7 +254,7 @@ function buildSearchIndex(): SearchResult[] {
     };
   });
 
-  const birthdays = safeReadArray(STORAGE_KEYS.birthdays).map((item, index) => {
+  const birthdays = collections.birthdays.map((item, index) => {
     const title =
       pickString(item, ["name", "title"]) || `Birthday Profile ${index + 1}`;
 
@@ -279,7 +276,7 @@ function buildSearchIndex(): SearchResult[] {
     };
   });
 
-  const ai = safeReadArray(STORAGE_KEYS.ai).map((item, index) => {
+  const ai = collections.ai.map((item, index) => {
     const title =
       pickString(item, ["title", "name"]) || `AI Draft ${index + 1}`;
 
@@ -306,7 +303,62 @@ function buildSearchIndex(): SearchResult[] {
     };
   });
 
-  return [...kpis, ...social, ...assets, ...events, ...birthdays, ...ai];
+  const projects = collections.projects.map((item, index) => {
+    const title =
+      pickString(item, ["name", "title"]) || `Project ${index + 1}`;
+    const status = pickString(item, ["status"]) || "No status";
+    const priority = pickString(item, ["priority"]);
+    const owner = pickString(item, ["owner"]);
+    const body = pickString(item, [
+      "objective",
+      "deliverables",
+      "notes",
+      "category",
+    ]);
+
+    return {
+      id: `project-${pickString(item, ["id"]) || index}`,
+      module: "Projects" as const,
+      title,
+      subtitle: [status, priority, owner].filter(Boolean).join(" · "),
+      body: body || recordText(item),
+      status,
+      href: "/projects",
+      createdAt: pickString(item, ["createdAt", "dueDate"]),
+      rawText: recordText(item),
+    };
+  });
+
+  const news = collections.news.map((item, index) => {
+    const title =
+      pickString(item, ["headline", "title"]) || `News item ${index + 1}`;
+    const relevance = pickString(item, ["relevance"]) || "Saved";
+    const source = pickString(item, ["source"]);
+    const body = pickString(item, ["summary", "notes", "url"]);
+
+    return {
+      id: `news-${pickString(item, ["id"]) || index}`,
+      module: "News" as const,
+      title,
+      subtitle: [source, relevance].filter(Boolean).join(" · "),
+      body: body || recordText(item),
+      status: relevance,
+      href: "/news/collector",
+      createdAt: pickString(item, ["createdAt"]),
+      rawText: recordText(item),
+    };
+  });
+
+  return [
+    ...kpis,
+    ...projects,
+    ...social,
+    ...assets,
+    ...events,
+    ...birthdays,
+    ...news,
+    ...ai,
+  ];
 }
 
 function buildExportText(result: SearchResult | null) {
@@ -336,22 +388,28 @@ export function SearchCommandClient() {
   const [copied, setCopied] = useState(false);
   const [lastRefresh, setLastRefresh] = useState("");
 
-  function refreshIndex() {
-    const nextIndex = buildSearchIndex();
-    setIndex(nextIndex);
-    setSelectedId(nextIndex[0]?.id ?? null);
+  async function refreshIndex() {
+    try {
+      const collections = await loadWorkspaceCollections();
+      const nextIndex = buildSearchIndex(collections);
+      setIndex(nextIndex);
+      setSelectedId(nextIndex[0]?.id ?? null);
 
-    setLastRefresh(
-      new Intl.DateTimeFormat("en-NG", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }).format(new Date())
-    );
+      setLastRefresh(
+        new Intl.DateTimeFormat("en-NG", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }).format(new Date())
+      );
+    } catch (error) {
+      console.error("Failed to refresh search index:", error);
+      setLastRefresh("Refresh failed");
+    }
   }
 
   useEffect(() => {
-    refreshIndex();
+    void refreshIndex();
   }, []);
 
   const filteredResults = useMemo(() => {
