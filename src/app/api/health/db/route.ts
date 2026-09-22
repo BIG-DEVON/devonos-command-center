@@ -12,6 +12,7 @@ export async function GET() {
       aiDrafts,
       projects,
       newsItems,
+      approvals,
     ] = await Promise.all([
       prisma.kpiItem.count(),
       prisma.socialDraft.count(),
@@ -21,6 +22,7 @@ export async function GET() {
       prisma.aiDraft.count(),
       prisma.projectRecord.count(),
       prisma.newsItem.count(),
+      prisma.approvalRequest.count(),
     ]);
 
     return NextResponse.json({
@@ -35,6 +37,7 @@ export async function GET() {
         aiDrafts,
         projects,
         newsItems,
+        approvals,
       },
     });
   } catch (error) {

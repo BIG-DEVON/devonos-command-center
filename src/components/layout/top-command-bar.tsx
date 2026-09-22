@@ -2,14 +2,14 @@
 
 import type { ElementType } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Bell,
   Briefcase,
   CalendarDays,
   Check,
-  ChevronRight,
   Command,
+  FileCheck2,
   Gauge,
   Menu,
   Newspaper,
@@ -20,12 +20,14 @@ import {
   X,
 } from "lucide-react";
 import {
+  useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
 import { mainNavigation, utilityNavigation } from "@/config/navigation";
+import { useDevonPreferences } from "@/components/providers/devon-preferences-provider";
+import { UniversalSearchPalette } from "@/components/search/universal-search-palette";
 
 type NavigationEntry = {
   name: string;
@@ -40,6 +42,12 @@ const allNavigation = [
 ];
 
 const quickCreate = [
+  {
+    label: "Approval request",
+    description: "Route a decision",
+    href: "/approvals",
+    icon: FileCheck2,
+  },
   {
     label: "New project",
     description: "Plan a workstream",
@@ -66,22 +74,42 @@ const quickCreate = [
   },
 ];
 
-const initialNotifications = [
-  {
-    id: "autopilot",
-    title: "Your action queue is ready",
-    detail: "Review today’s highest-priority signals.",
-    href: "/autopilot",
-    time: "Now",
-  },
-  {
-    id: "calendar",
-    title: "Calendar is in sync",
-    detail: "Upcoming moments are available to review.",
-    href: "/calendar",
-    time: "Today",
-  },
-];
+type NotificationItem = {
+  id: string;
+  title: string;
+  message: string;
+  category: string;
+  severity: string;
+  href: string;
+  status: "Unread" | "Read" | "Archived";
+  createdAt: string;
+};
+
+const NOTIFICATIONS_CHANGED_EVENT = "devonos:notifications-changed";
+
+function notificationTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const minutes = Math.floor((Date.now() - date.getTime()) / 60_000);
+  if (minutes < 1) return "Now";
+  if (minutes < 60) return `${minutes}m`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+
+  return new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "short",
+  }).format(date);
+}
+
+function notificationDotClass(severity: string) {
+  if (severity === "critical") return "bg-red-500";
+  if (severity === "warning") return "bg-amber-500";
+  if (severity === "success") return "bg-cyan-500";
+  return "bg-[#6d5dfc]";
+}
 
 function isItemActive(pathname: string, href: string) {
   if (href === "/dashboard") {
@@ -91,38 +119,74 @@ function isItemActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
-}
-
 export function TopCommandBar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const { settings, playSound } = useDevonPreferences();
+  const notificationFetchCompleted = useRef(false);
+  const previousUnreadCount = useRef(0);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const activeItem =
     allNavigation
       .slice()
       .sort((a, b) => b.href.length - a.href.length)
       .find((item) => isItemActive(pathname, item.href)) ?? allNavigation[0];
+  const highestUnreadSeverity =
+    notifications.find(
+      (notification) =>
+        notification.status === "Unread" &&
+        notification.severity === "critical"
+    )?.severity ??
+    notifications.find(
+      (notification) =>
+        notification.status === "Unread" &&
+        notification.severity === "warning"
+    )?.severity ??
+    "info";
 
-  const filteredItems = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return allNavigation;
+  const loadNotifications = useCallback(
+    async (announceNew = false) => {
+      try {
+        setNotificationsLoading(true);
+        const response = await fetch("/api/notifications", {
+          method: "GET",
+          cache: "no-store",
+        });
+        const data = (await response.json()) as {
+          ok: boolean;
+          notifications?: NotificationItem[];
+          unreadCount?: number;
+        };
 
-    return allNavigation.filter((item) =>
-      `${item.name} ${item.description}`.toLowerCase().includes(normalized)
-    );
-  }, [query]);
+        if (!response.ok || !data.ok) return;
+
+        const nextUnreadCount = data.unreadCount ?? 0;
+        if (
+          announceNew &&
+          notificationFetchCompleted.current &&
+          nextUnreadCount > previousUnreadCount.current
+        ) {
+          playSound();
+        }
+
+        setNotifications(data.notifications ?? []);
+        setUnreadCount(nextUnreadCount);
+        previousUnreadCount.current = nextUnreadCount;
+        notificationFetchCompleted.current = true;
+      } catch (error) {
+        console.error("Failed to refresh notifications:", error);
+      } finally {
+        setNotificationsLoading(false);
+      }
+    },
+    [playSound]
+  );
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -151,25 +215,109 @@ export function TopCommandBar() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!paletteOpen) return;
-    const timer = window.setTimeout(() => searchInputRef.current?.focus(), 40);
-    return () => window.clearTimeout(timer);
-  }, [paletteOpen]);
+    if (!settings.inAppNotifications) {
+      setNotificationsOpen(false);
+      return;
+    }
 
-  function openPalette() {
-    setQuery("");
-    setPaletteOpen(true);
+    void loadNotifications(false);
+
+    function handleNotificationsChanged() {
+      void loadNotifications(true);
+    }
+
+    window.addEventListener(
+      NOTIFICATIONS_CHANGED_EVENT,
+      handleNotificationsChanged
+    );
+    const refreshInterval = window.setInterval(
+      () => void loadNotifications(true),
+      60_000
+    );
+
+    return () => {
+      window.removeEventListener(
+        NOTIFICATIONS_CHANGED_EVENT,
+        handleNotificationsChanged
+      );
+      window.clearInterval(refreshInterval);
+    };
+  }, [loadNotifications, settings.inAppNotifications]);
+
+  async function markNotification(
+    id: string,
+    status: "Read" | "Archived"
+  ) {
+    const item = notifications.find((notification) => notification.id === id);
+    if (!item || item.status === status) return;
+
+    setNotifications((current) =>
+      status === "Archived"
+        ? current.filter((notification) => notification.id !== id)
+        : current.map((notification) =>
+            notification.id === id
+              ? { ...notification, status: "Read" }
+              : notification
+          )
+    );
+    if (item.status === "Unread") {
+      setUnreadCount((count) => Math.max(0, count - 1));
+      previousUnreadCount.current = Math.max(
+        0,
+        previousUnreadCount.current - 1
+      );
+    }
+
+    try {
+      await fetch("/api/notifications", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id, status }),
+      });
+    } catch (error) {
+      console.error("Failed to update notification:", error);
+      void loadNotifications(false);
+    }
   }
 
-  function navigateTo(href: string) {
-    setPaletteOpen(false);
-    router.push(href);
+  async function markAllNotificationsRead() {
+    if (!unreadCount) return;
+
+    setNotifications((current) =>
+      current.map((notification) => ({
+        ...notification,
+        status: "Read",
+      }))
+    );
+    setUnreadCount(0);
+    previousUnreadCount.current = 0;
+
+    try {
+      const response = await fetch("/api/notifications", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ markAllRead: true }),
+      });
+
+      if (!response.ok) void loadNotifications(false);
+    } catch (error) {
+      console.error("Failed to mark notifications as read:", error);
+      void loadNotifications(false);
+    }
+  }
+
+  function openPalette() {
+    setPaletteOpen(true);
   }
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-black/[0.055] bg-[#f6f6f8]/82 px-4 backdrop-blur-2xl sm:px-6 lg:px-8">
-        <div className="mx-auto flex h-[72px] max-w-[1500px] items-center justify-between gap-4">
+      <header className="sticky top-0 z-30 border-b border-black/[0.055] bg-[#f5f5f7]/88 px-4 backdrop-blur-2xl sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-16 max-w-[1500px] items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
@@ -183,26 +331,16 @@ export function TopCommandBar() {
             <Link
               href="/dashboard"
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[#17171b] text-[11px] font-bold text-white lg:hidden"
-              aria-label="DevonOS dashboard"
+              aria-label="Morrow dashboard"
             >
-              DO
+              M
             </Link>
 
             <div className="min-w-0">
-              <p className="hidden text-[11px] font-semibold text-[#92929a] sm:block">
-                {getGreeting()}, Big Devon
-              </p>
               <div className="flex items-center gap-2">
-                <h1 className="truncate text-[18px] font-bold tracking-[-0.035em] text-[#1d1d21] sm:text-[20px]">
+                <h1 className="truncate text-[17px] font-semibold tracking-[-0.035em] text-[#1d1d1f] sm:text-[19px]">
                   {activeItem.name}
                 </h1>
-                <ChevronRight
-                  size={14}
-                  className="hidden text-[#c1c1c7] sm:block"
-                />
-                <span className="hidden truncate text-xs text-[#96969e] md:block">
-                  {activeItem.description}
-                </span>
               </div>
             </div>
           </div>
@@ -210,10 +348,10 @@ export function TopCommandBar() {
           <button
             type="button"
             onClick={openPalette}
-            className="group hidden h-10 w-full max-w-[410px] items-center gap-3 rounded-[13px] border border-black/[0.07] bg-white/75 px-3 text-left text-[13px] text-[#9a9aa2] shadow-[0_1px_2px_rgba(0,0,0,0.025)] transition hover:border-black/[0.11] hover:bg-white md:flex"
+            className="group hidden h-10 w-full max-w-[430px] items-center gap-3 rounded-[12px] border border-black/[0.065] bg-white/82 px-3 text-left text-[13px] text-[#8e8e93] shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition hover:border-black/[0.11] hover:bg-white md:flex"
           >
             <Search size={15} />
-            <span className="flex-1">Search or jump anywhere</span>
+            <span className="flex-1">Search people, work, or anything</span>
             <kbd className="flex items-center gap-1 rounded-[7px] border border-black/[0.07] bg-[#f6f6f8] px-2 py-1 text-[10px] font-semibold text-[#85858e]">
               <Command size={10} />
               K
@@ -275,43 +413,52 @@ export function TopCommandBar() {
               ) : null}
             </div>
 
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  setNotificationsOpen((open) => !open);
-                  setCreateOpen(false);
-                }}
-                className="devon-icon-button relative"
-                aria-label={`${notifications.length} notifications`}
-                aria-expanded={notificationsOpen}
-              >
-                <Bell size={17} />
-                {notifications.length ? (
-                  <span className="absolute right-[8px] top-[7px] h-1.5 w-1.5 rounded-full bg-[#6d5dfc] ring-2 ring-white" />
-                ) : null}
-              </button>
+            {settings.inAppNotifications ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                  setNotificationsOpen((open) => {
+                      return !open;
+                    });
+                    setCreateOpen(false);
+                  }}
+                  className="devon-icon-button relative"
+                  aria-label={`${unreadCount} unread notifications`}
+                  aria-expanded={notificationsOpen}
+                >
+                  <Bell size={17} />
+                  {unreadCount ? (
+                    <span
+                      className={`absolute right-[8px] top-[7px] h-1.5 w-1.5 rounded-full ring-2 ring-white ${notificationDotClass(
+                        highestUnreadSeverity
+                      )}`}
+                    />
+                  ) : null}
+                </button>
 
-              {notificationsOpen ? (
-                <PopoverCard label="Notifications" wide>
+                {notificationsOpen ? (
+                  <PopoverCard label="Notifications" wide>
                   <div className="flex items-center justify-between border-b border-black/[0.055] px-4 py-3">
                     <div>
                       <p className="text-sm font-bold text-[#2a2a2f]">
                         Notifications
                       </p>
                       <p className="mt-0.5 text-[11px] text-[#9999a1]">
-                        {notifications.length
-                          ? `${notifications.length} items need a look`
+                        {unreadCount
+                          ? `${unreadCount} unread ${
+                              unreadCount === 1 ? "update" : "updates"
+                            }`
                           : "You’re all caught up"}
                       </p>
                     </div>
-                    {notifications.length ? (
+                    {unreadCount ? (
                       <button
                         type="button"
-                        onClick={() => setNotifications([])}
+                        onClick={markAllNotificationsRead}
                         className="text-[11px] font-semibold text-[#6d5dfc] hover:text-[#5144d9]"
                       >
-                        Clear all
+                        Mark all read
                       </button>
                     ) : null}
                   </div>
@@ -321,23 +468,41 @@ export function TopCommandBar() {
                       notifications.map((item) => (
                         <Link
                           key={item.id}
-                          href={item.href}
-                          className="flex gap-3 rounded-[13px] p-3 transition hover:bg-black/[0.04]"
+                          href={item.href || "/autopilot"}
+                          onClick={() => void markNotification(item.id, "Read")}
+                          className={`flex gap-3 rounded-[13px] p-3 transition hover:bg-black/[0.04] ${
+                            item.status === "Unread" ? "bg-[#f6f5ff]" : ""
+                          }`}
                         >
-                          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#6d5dfc]" />
+                          <span
+                            className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                              item.status === "Unread"
+                                ? notificationDotClass(item.severity)
+                                : "bg-[#d5d5da]"
+                            }`}
+                          />
                           <span className="min-w-0 flex-1">
+                            <span className="mb-1 block text-[9px] font-bold uppercase tracking-[0.14em] text-[#9a90ef]">
+                              {item.category}
+                            </span>
                             <span className="block text-[13px] font-semibold text-[#2c2c31]">
                               {item.title}
                             </span>
                             <span className="mt-1 block text-xs leading-5 text-[#8d8d96]">
-                              {item.detail}
+                              {item.message}
                             </span>
                           </span>
                           <span className="text-[10px] font-medium text-[#aaaab1]">
-                            {item.time}
+                            {notificationTime(item.createdAt)}
                           </span>
                         </Link>
                       ))
+                    ) : notificationsLoading ? (
+                      <div className="px-5 py-9 text-center">
+                        <p className="text-sm font-semibold text-[#696971]">
+                          Loading notifications…
+                        </p>
+                      </div>
                     ) : (
                       <div className="px-5 py-9 text-center">
                         <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
@@ -349,9 +514,10 @@ export function TopCommandBar() {
                       </div>
                     )}
                   </div>
-                </PopoverCard>
-              ) : null}
-            </div>
+                  </PopoverCard>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
       </header>
@@ -366,14 +532,14 @@ export function TopCommandBar() {
           aria-label="Navigation"
         >
           <div className="flex h-full flex-col">
-            <div className="flex h-[72px] items-center justify-between border-b border-black/[0.06] px-5">
+            <div className="flex h-16 items-center justify-between border-b border-black/[0.06] px-5">
               <Link href="/dashboard" className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#17171b] text-xs font-bold text-white">
-                  DO
+                  M
                 </span>
                 <span>
                   <span className="block text-sm font-bold text-[#1e1e22]">
-                    DevonOS
+                    Morrow
                   </span>
                   <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#9b9ba3]">
                     Command Center
@@ -430,95 +596,7 @@ export function TopCommandBar() {
       ) : null}
 
       {paletteOpen ? (
-        <div
-          className="fixed inset-0 z-[70] flex items-start justify-center bg-black/25 px-4 pt-[8vh] backdrop-blur-sm sm:pt-[14vh]"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Command palette"
-          onMouseDown={(event) => {
-            if (event.currentTarget === event.target) setPaletteOpen(false);
-          }}
-        >
-          <div className="w-full max-w-[620px] overflow-hidden rounded-[24px] border border-white/60 bg-[#fbfbfc] shadow-[0_32px_100px_rgba(0,0,0,0.24)]">
-            <div className="flex items-center gap-3 border-b border-black/[0.06] px-4">
-              <Search size={18} className="text-[#84848d]" />
-              <input
-                ref={searchInputRef}
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && filteredItems[0]) {
-                    navigateTo(filteredItems[0].href);
-                  }
-                }}
-                placeholder="Search workspaces and actions..."
-                className="h-14 flex-1 bg-transparent text-[15px] text-[#25252a] outline-none placeholder:text-[#a5a5ac]"
-                aria-label="Search workspaces"
-              />
-              <button
-                type="button"
-                onClick={() => setPaletteOpen(false)}
-                className="rounded-lg border border-black/[0.07] bg-white px-2 py-1 text-[10px] font-semibold text-[#8f8f97]"
-              >
-                ESC
-              </button>
-            </div>
-
-            <div className="devon-scrollbar max-h-[430px] overflow-y-auto p-2">
-              {filteredItems.length ? (
-                filteredItems.map((item, index) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.href}
-                      type="button"
-                      onClick={() => navigateTo(item.href)}
-                      className={`group flex w-full items-center gap-3 rounded-[15px] p-3 text-left transition hover:bg-black/[0.045] ${
-                        index === 0 && query ? "bg-black/[0.035]" : ""
-                      }`}
-                    >
-                      <span className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-black/[0.055] bg-white text-[#6d5dfc] shadow-sm">
-                        <Icon size={17} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold text-[#303036]">
-                          {item.name}
-                        </span>
-                        <span className="mt-0.5 block truncate text-[11px] text-[#95959d]">
-                          {item.description}
-                        </span>
-                      </span>
-                      <ChevronRight
-                        size={15}
-                        className="text-[#b9b9c0] transition group-hover:translate-x-0.5 group-hover:text-[#6d5dfc]"
-                      />
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="px-5 py-12 text-center">
-                  <p className="text-sm font-semibold text-[#404046]">
-                    No matching workspace
-                  </p>
-                  <p className="mt-1 text-xs text-[#9999a1]">
-                    Try a module name or action.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between border-t border-black/[0.055] px-4 py-2.5 text-[10px] font-medium text-[#a0a0a8]">
-              <span>Press Enter to open the first result</span>
-              <Link
-                href="/command"
-                onClick={() => setPaletteOpen(false)}
-                className="font-semibold text-[#6d5dfc]"
-              >
-                Command center
-              </Link>
-            </div>
-          </div>
-        </div>
+        <UniversalSearchPalette onClose={() => setPaletteOpen(false)} />
       ) : null}
 
       {createOpen || notificationsOpen ? (

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { validateNewsInput } from "@/lib/news-input";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -10,23 +11,25 @@ type RouteContext = {
 export async function PATCH(request: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const body = await request.json();
+    const body = (await request.json()) as Record<string, unknown>;
+    let input;
+    try {
+      input = validateNewsInput(body, { partial: true });
+    } catch (error) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: error instanceof Error ? error.message : "News input is invalid.",
+        },
+        { status: 400 }
+      );
+    }
 
     const newsItem = await prisma.newsItem.update({
       where: {
         id,
       },
-      data: {
-        headline:
-          body.headline === undefined ? undefined : String(body.headline).trim(),
-        source: body.source === undefined ? undefined : String(body.source).trim(),
-        url: body.url === undefined ? undefined : String(body.url).trim(),
-        summary:
-          body.summary === undefined ? undefined : String(body.summary).trim(),
-        relevance:
-          body.relevance === undefined ? undefined : String(body.relevance),
-        notes: body.notes === undefined ? undefined : String(body.notes).trim(),
-      },
+      data: input,
     });
 
     return NextResponse.json({

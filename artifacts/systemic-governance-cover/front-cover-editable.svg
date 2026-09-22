@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="1875" height="2775" viewBox="0 0 1875 2775">
+  <title>Systemic Governance Quality Through Digital Transformation — paperback front cover</title>
+  <desc>Provisional 6 by 9 inch paperback front cover with one eighth inch bleed, prepared at 300 pixels per inch.</desc>
+
+  <defs>
+    <linearGradient id="title-shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#02080f" stop-opacity="0.80"/>
+      <stop offset="0.70" stop-color="#04101c" stop-opacity="0.44"/>
+      <stop offset="1" stop-color="#04101c" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+      <feOffset in="blur" dy="3" result="offsetBlur"/>
+      <feComponentTransfer in="offsetBlur" result="shadow">
+        <feFuncA type="linear" slope="0.42"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Full-bleed generated artwork. Keep this file beside cover-artwork.png. -->
+  <image x="0" y="0" width="1875" height="2775"
+         xlink:href="cover-artwork.png"
+         preserveAspectRatio="xMidYMid slice"/>
+  <rect x="0" y="0" width="1875" height="1425" fill="url(#title-shade)"/>
+
+  <g id="title-block"
+     font-family="Montserrat, 'Avenir Next', Helvetica, Arial, sans-serif"
+     text-rendering="geometricPrecision"
+     filter="url(#soft-shadow)">
+    <rect x="190" y="176" width="128" height="8" rx="4" fill="#f6c968"/>
+
+    <text x="190" y="330" fill="#b9dfe1" font-size="108" font-weight="600"
+          letter-spacing="21">SYSTEMIC</text>
+
+    <text x="182" y="520" fill="#f4f7f5" font-size="168" font-weight="800"
+          letter-spacing="0">GOVERNANCE</text>
+    <text x="182" y="682" fill="#f4f7f5" font-size="168" font-weight="800"
+          letter-spacing="1">QUALITY</text>
+
+    <text x="190" y="818" fill="#a6d7d9" font-size="62" font-weight="600"
+          letter-spacing="12">THROUGH</text>
+    <text x="596" y="818" fill="#f6c968" font-size="62" font-weight="700"
+          letter-spacing="12">DIGITAL</text>
+
+    <text x="184" y="962" fill="#f4f7f5" font-size="112" font-weight="800"
+          letter-spacing="1">TRANSFORMATION</text>
+
+    <line x1="190" y1="1030" x2="760" y2="1030" stroke="#f6c968" stroke-width="5"/>
+
+    <text x="190" y="1122" fill="#dce9e8" font-size="42" font-weight="500"
+          letter-spacing="0.4">
+      <tspan x="190" dy="0">How AI-Enabled Public Sector Reform Can Improve</tspan>
+      <tspan x="190" dy="61">Transparency, Service Delivery, and Public Trust</tspan>
+    </text>
+  </g>
+
+  <!-- Author name intentionally omitted because none was supplied. -->
+</svg>

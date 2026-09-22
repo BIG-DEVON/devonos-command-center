@@ -7,6 +7,7 @@ export type WorkspaceCollections = {
   ai: Record<string, unknown>[];
   projects: Record<string, unknown>[];
   news: Record<string, unknown>[];
+  approvals: Record<string, unknown>[];
 };
 
 async function fetchCollection(endpoint: string, key: string) {
@@ -30,7 +31,7 @@ async function fetchCollection(endpoint: string, key: string) {
 }
 
 export async function loadWorkspaceCollections(): Promise<WorkspaceCollections> {
-  const [kpis, social, assets, events, birthdays, ai, projects, news] =
+  const [kpis, social, assets, events, birthdays, ai, projects, news, approvals] =
     await Promise.all([
       fetchCollection("/api/kpis", "kpis"),
       fetchCollection("/api/social", "drafts"),
@@ -40,6 +41,7 @@ export async function loadWorkspaceCollections(): Promise<WorkspaceCollections> 
       fetchCollection("/api/ai", "drafts"),
       fetchCollection("/api/projects", "projects"),
       fetchCollection("/api/news", "newsItems"),
+      fetchCollection("/api/approvals", "approvals"),
     ]);
 
   return {
@@ -51,5 +53,6 @@ export async function loadWorkspaceCollections(): Promise<WorkspaceCollections> 
     ai,
     projects,
     news,
+    approvals,
   };
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isValidBirthdayDate } from "@/lib/birthday-content";
 
 export async function GET() {
   try {
@@ -29,14 +30,25 @@ export async function POST(request: Request) {
       );
     }
 
+    const month = Number(body.month);
+    const day = Number(body.day);
+
+    if (!isValidBirthdayDate(month, day)) {
+      return NextResponse.json(
+        { ok: false, message: "A valid birthday month and day are required." },
+        { status: 400 }
+      );
+    }
+
     const profile = await prisma.birthdayProfile.create({
       data: {
         name,
         role: String(body.role ?? "").trim(),
         category: String(body.category ?? "").trim(),
-        month: Math.min(12, Math.max(1, Number(body.month) || 1)),
-        day: Math.min(31, Math.max(1, Number(body.day) || 1)),
+        month,
+        day,
         photoUrl: String(body.photoUrl ?? "").trim(),
+        hallMemberId: String(body.hallMemberId ?? "").trim() || null,
         notes: String(body.notes ?? "").trim(),
         preferredTone: String(body.preferredTone ?? "Warm"),
       },

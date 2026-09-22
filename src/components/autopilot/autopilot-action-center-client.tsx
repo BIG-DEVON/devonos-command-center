@@ -13,6 +13,7 @@ import {
   Clipboard,
   Copy,
   Database,
+  FileCheck2,
   FileText,
   Newspaper,
   RefreshCcw,
@@ -46,6 +47,7 @@ type AutopilotCounts = {
   birthdays: number;
   aiDrafts: number;
   newsItems: number;
+  approvals: number;
   signals: number;
   critical: number;
   high: number;
@@ -82,6 +84,7 @@ const emptyCounts: AutopilotCounts = {
   birthdays: 0,
   aiDrafts: 0,
   newsItems: 0,
+  approvals: 0,
   signals: 0,
   critical: 0,
   high: 0,
@@ -94,7 +97,7 @@ function healthConfig(health: AutopilotBriefResponse["health"] | undefined) {
     return {
       label: "Critical",
       title: "Urgent command pressure detected",
-      text: "DevonOS found critical items that should be handled immediately.",
+      text: "Morrow found critical items that should be handled immediately.",
       icon: AlertTriangle,
       chip: "border-red-100 bg-red-50 text-red-600",
       gradient: "from-red-500 to-pink-500",
@@ -104,7 +107,7 @@ function healthConfig(health: AutopilotBriefResponse["health"] | undefined) {
   if (health === "attention") {
     return {
       label: "Attention",
-      title: "DevonOS has work for you",
+      title: "Morrow has work for you",
       text: "Some items need review, approval, follow-up, or preparation.",
       icon: Zap,
       chip: "border-blue-100 bg-blue-50 text-blue-600",
@@ -145,6 +148,7 @@ function moduleIcon(module: string): ElementType {
   if (lower.includes("social")) return Send;
   if (lower.includes("ai")) return Bot;
   if (lower.includes("news")) return Newspaper;
+  if (lower.includes("approval")) return FileCheck2;
 
   return Sparkles;
 }
@@ -198,7 +202,7 @@ export function AutopilotActionCenterClient() {
       setData(result);
     } catch (error) {
       console.error("Failed to load Autopilot brief:", error);
-      setErrorMessage("DevonOS could not load the Autopilot brief.");
+      setErrorMessage("Morrow could not load the Autopilot brief.");
     } finally {
       setLoaded(true);
       setRefreshing(false);
@@ -217,7 +221,7 @@ export function AutopilotActionCenterClient() {
     () => [
       {
         title: "Create Social Draft",
-        text: "DevonOS turns today’s command signals into a Social Studio draft you can review and post later.",
+        text: "Morrow turns today’s command signals into a Social Studio draft you can review and post later.",
         icon: Send,
         action: "create_social_draft",
         href: "/social",
@@ -225,7 +229,7 @@ export function AutopilotActionCenterClient() {
       },
       {
         title: "Create AI Review Draft",
-        text: "DevonOS creates an AI Studio review draft from the command brief for executive-style summarization.",
+        text: "Morrow creates an AI Studio review draft from the command brief for executive-style summarization.",
         icon: Bot,
         action: "create_ai_review_draft",
         href: "/ai",
@@ -259,7 +263,7 @@ export function AutopilotActionCenterClient() {
       await loadBrief();
     } catch (error) {
       console.error("Autopilot action failed:", error);
-      setErrorMessage("DevonOS could not complete that Autopilot action.");
+      setErrorMessage("Morrow could not complete that Autopilot action.");
     } finally {
       setBusyAction(null);
     }
@@ -304,7 +308,7 @@ export function AutopilotActionCenterClient() {
               <HeroMetric value={counts.signals} label="Signals" />
               <HeroMetric value={counts.high} label="High" />
               <HeroMetric value={counts.medium} label="Medium" />
-              <HeroMetric value={counts.aiDrafts} label="AI Drafts" />
+              <HeroMetric value={counts.approvals} label="Approvals" />
             </div>
 
             <div className="mt-7 flex flex-col gap-3 md:flex-row">
@@ -438,7 +442,7 @@ export function AutopilotActionCenterClient() {
                 className="devon-v2-soft-button mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-extrabold text-white transition duration-300 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55"
               >
                 <Sparkles size={16} />
-                {isBusy ? "DevonOS is working..." : item.button}
+                {isBusy ? "Morrow is working..." : item.button}
               </button>
             </motion.div>
           );
@@ -451,7 +455,7 @@ export function AutopilotActionCenterClient() {
             <div>
               <p className="devon-v2-label text-blue-600">Signal Queue</p>
               <h2 className="mt-2 text-3xl text-[#07111f]">
-                What DevonOS found
+                What Morrow found
               </h2>
             </div>
 
@@ -462,7 +466,7 @@ export function AutopilotActionCenterClient() {
             <EmptyState
               icon={RefreshCcw}
               title="Loading signals"
-              text="DevonOS is reading your database."
+              text="Morrow is reading your database."
             />
           ) : data?.topSignals.length ? (
             <div className="space-y-3">
@@ -522,7 +526,7 @@ export function AutopilotActionCenterClient() {
             <EmptyState
               icon={ShieldCheck}
               title="No pressure detected"
-              text="DevonOS did not find urgent work right now."
+              text="Morrow did not find urgent work right now."
             />
           )}
         </div>
@@ -542,7 +546,7 @@ export function AutopilotActionCenterClient() {
           <div className="rounded-[2rem] border border-slate-950/[0.075] bg-white/72 p-5">
             <pre className="max-h-[680px] overflow-auto whitespace-pre-wrap font-sans text-sm font-medium leading-7 text-slate-700">
               {data?.briefText ??
-                "DevonOS is preparing your command brief..."}
+                "Morrow is preparing your command brief..."}
             </pre>
           </div>
         </div>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="1875" height="2775" viewBox="0 0 1875 2775">
+  <title>Systemic Governance Quality Through Digital Transformation — minimal paperback cover</title>
+  <desc>Minimal 6 by 9 inch paperback front-cover concept with one eighth inch bleed, prepared at 300 pixels per inch.</desc>
+
+  <image x="0" y="0" width="1875" height="2775"
+         xlink:href="cover-artwork-v2-minimal.png"
+         preserveAspectRatio="xMidYMid slice"/>
+
+  <g id="title-block" text-rendering="geometricPrecision">
+    <text x="170" y="315"
+          fill="#183548"
+          font-family="'New York', Georgia, serif"
+          font-size="120" font-weight="600" letter-spacing="-1.5">
+      Systemic Governance
+    </text>
+    <text x="170" y="458"
+          fill="#183548"
+          font-family="'New York', Georgia, serif"
+          font-size="120" font-weight="600" letter-spacing="-1.5">
+      Quality Through
+    </text>
+    <text x="170" y="601"
+          fill="#34747c"
+          font-family="'New York', Georgia, serif"
+          font-size="120" font-weight="600" letter-spacing="-1.5">
+      Digital Transformation
+    </text>
+
+    <text x="174" y="740"
+          fill="#314552"
+          font-family="'Avenir Next', Avenir, Helvetica, Arial, sans-serif"
+          font-size="37" font-weight="500" letter-spacing="0.15">
+      <tspan x="174" dy="0">How AI-Enabled Public Sector Reform Can Improve</tspan>
+      <tspan x="174" dy="54">Transparency, Service Delivery, and Public Trust</tspan>
+    </text>
+  </g>
+
+  <!-- Author name intentionally omitted because none was supplied. -->
+</svg>

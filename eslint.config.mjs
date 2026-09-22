@@ -18,6 +18,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // These are separate nested applications with their own lint/build output.
+    "birthday-site/**",
+    "hod-bukkie-birthday/**",
   ]),
 ]);
 

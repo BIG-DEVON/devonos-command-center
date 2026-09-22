@@ -1,12 +1,40 @@
 import { NextResponse } from "next/server";
+import { validateNewsInput } from "@/lib/news-input";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get("status");
+    const topic = searchParams.get("topic");
+    const query = searchParams.get("query")?.trim();
+
     const newsItems = await prisma.newsItem.findMany({
-      orderBy: {
-        createdAt: "desc",
+      where: {
+        status: status && status !== "All" ? status : undefined,
+        topic: topic && topic !== "All" ? topic : undefined,
+        OR: query
+          ? [
+              { headline: { contains: query } },
+              { source: { contains: query } },
+              { summary: { contains: query } },
+              { topic: { contains: query } },
+              { channel: { contains: query } },
+            ]
+          : undefined,
       },
+      orderBy: [
+        {
+          publishedAt: "desc",
+        },
+        {
+          score: "desc",
+        },
+        {
+          createdAt: "desc",
+        },
+      ],
+      take: 500,
     });
 
     return NextResponse.json({
@@ -28,17 +56,22 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = (await request.json()) as Record<string, unknown>;
+    let input;
+    try {
+      input = validateNewsInput(body);
+    } catch (error) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: error instanceof Error ? error.message : "News input is invalid.",
+        },
+        { status: 400 }
+      );
+    }
 
     const newsItem = await prisma.newsItem.create({
-      data: {
-        headline: String(body.headline ?? "").trim(),
-        source: String(body.source ?? "").trim(),
-        url: String(body.url ?? "").trim(),
-        summary: String(body.summary ?? "").trim(),
-        relevance: String(body.relevance ?? "Medium"),
-        notes: String(body.notes ?? "").trim(),
-      },
+      data: input as Required<typeof input>,
     });
 
     return NextResponse.json({

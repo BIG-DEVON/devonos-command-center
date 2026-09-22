@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  parseGlobalEventInput,
+  type GlobalEventWrite,
+} from "@/lib/global-event-input";
 
 export async function GET() {
   try {
     const events = await prisma.globalEvent.findMany({
       orderBy: {
-        createdAt: "desc",
+        date: "asc",
       },
     });
 
@@ -28,20 +32,32 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
+    const parsed = parseGlobalEventInput(body);
+    if (!parsed.ok) {
+      return NextResponse.json(
+        { ok: false, message: parsed.message },
+        { status: 400 }
+      );
+    }
+    const eventInput = parsed.data as GlobalEventWrite;
+    const existing = await prisma.globalEvent.findFirst({
+      where: {
+        title: eventInput.title,
+        date: eventInput.date,
+      },
+    });
+    if (existing) {
+      return NextResponse.json({
+        ok: true,
+        event: existing,
+        existing: true,
+        message: "That moment is already in the Morrow plan.",
+      });
+    }
 
     const event = await prisma.globalEvent.create({
-      data: {
-        title: String(body.title ?? "").trim(),
-        date: String(body.date ?? ""),
-        category: String(body.category ?? "Global Observance"),
-        relevance: String(body.relevance ?? "Medium"),
-        status: String(body.status ?? "Idea"),
-        contentAngle: String(body.contentAngle ?? "").trim(),
-        visualDirection: String(body.visualDirection ?? "").trim(),
-        captionDraft: String(body.captionDraft ?? "").trim(),
-        notes: String(body.notes ?? "").trim(),
-      },
+      data: eventInput,
     });
 
     return NextResponse.json({

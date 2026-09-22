@@ -7,9 +7,9 @@ export default function CalendarPage() {
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <section className="mx-auto max-w-[1500px]">
         <ModuleHeader
-          eyebrow="Calendar"
-          title="See the next four weeks at a glance."
-          description="Bring events, birthdays, scheduled content, project dates, and deadlines into one planning view."
+          eyebrow="Morrow Calendar"
+          title="Time, finally made visible."
+          description="One living calendar for world moments, Nigerian holidays, JRB compliance, birthdays, scheduled content, approvals, and deadlines."
           icon={CalendarDays}
         />
         <CalendarCommandClient />

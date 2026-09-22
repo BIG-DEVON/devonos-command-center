@@ -15,8 +15,8 @@ export async function POST(request: Request) {
       skipped: result.skipped,
       message:
         result.created > 0
-          ? `DevonOS created ${result.created} new task(s) and skipped ${result.skipped} existing task(s).`
-          : `No new tasks were needed. DevonOS skipped ${result.skipped} existing task(s).`,
+          ? `Morrow created ${result.created} new task(s) and skipped ${result.skipped} existing task(s).`
+          : `No new tasks were needed. Morrow skipped ${result.skipped} existing task(s).`,
     });
   } catch (error) {
     console.error("Failed to generate Autopilot tasks:", error);
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: "DevonOS could not generate tasks from the current signals.",
+        message: "Morrow could not generate tasks from the current signals.",
       },
       { status: 500 }
     );

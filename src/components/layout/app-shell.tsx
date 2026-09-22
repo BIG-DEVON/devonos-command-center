@@ -1,7 +1,16 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopCommandBar } from "@/components/layout/top-command-bar";
+import { MorrowOnboarding } from "@/components/onboarding/morrow-onboarding";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  displayName,
+  showOnboarding,
+}: {
+  children: React.ReactNode;
+  displayName: string;
+  showOnboarding: boolean;
+}) {
   return (
     <div className="devon-app min-h-screen text-[#17171b]">
       <a
@@ -11,10 +20,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         Skip to content
       </a>
 
-      <div aria-hidden className="devon-app-glow" />
-
-      <div className="relative z-10 flex min-h-screen">
-        <Sidebar />
+      <div className="flex min-h-screen">
+        <Sidebar displayName={displayName} />
 
         <div className="min-w-0 flex-1">
           <TopCommandBar />
@@ -23,6 +30,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </div>
+      <MorrowOnboarding
+        displayName={displayName}
+        initialOpen={showOnboarding}
+      />
     </div>
   );
 }

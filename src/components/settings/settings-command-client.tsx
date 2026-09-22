@@ -1,47 +1,55 @@
 "use client";
 
+import Link from "next/link";
 import type { ElementType } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  Bell,
+  CalendarDays,
+  Check,
   CheckCircle2,
-  Copy,
+  ChevronRight,
+  Clock3,
+  Cloud,
   Crown,
-  FileText,
+  DatabaseBackup,
+  Download,
+  Gauge,
+  Laptop,
+  LockKeyhole,
+  MonitorSmartphone,
+  Moon,
   Palette,
   RefreshCcw,
   Save,
-  Settings,
-  Shield,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sun,
   Type,
   User,
+  Users,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
+import { useDevonPreferences } from "@/components/providers/devon-preferences-provider";
+import { NotificationDeliveryCenter } from "@/components/settings/notification-delivery-center";
+import {
+  defaultSettings,
+  devonModes,
+  devonTimezones,
+  devonTones,
+  normalizeSettings,
+  type DevonDensity,
+  type DevonMode,
+  type DevonMotion,
+  type DevonSettings,
+  type DevonTheme,
+  type DevonTone,
+  type WeekStartsOn,
+} from "@/lib/devon-settings";
 
-type DevonTone =
-  | "Premium"
-  | "Official"
-  | "Warm"
-  | "Bold"
-  | "Simple"
-  | "Luxury"
-  | "Professional";
-
-type DevonMode = "Personal" | "Work" | "Executive" | "Creative";
-
-type DevonSettings = {
-  displayName: string;
-  roleTitle: string;
-  organization: string;
-  defaultTone: DevonTone;
-  defaultMode: DevonMode;
-  signature: string;
-  brandDirection: string;
-  designRules: string;
-  writingRules: string;
-  postingRules: string;
-  systemNotes: string;
-  updatedAt: string;
-};
+type SectionId = "appearance" | "alerts" | "schedule" | "profile" | "data";
 
 type SettingsApiResponse = {
   ok: boolean;
@@ -49,149 +57,155 @@ type SettingsApiResponse = {
   message?: string;
 };
 
-const tones: DevonTone[] = [
-  "Premium",
-  "Official",
-  "Warm",
-  "Bold",
-  "Simple",
-  "Luxury",
-  "Professional",
+const sections: {
+  id: SectionId;
+  label: string;
+  description: string;
+  icon: ElementType;
+}[] = [
+  {
+    id: "appearance",
+    label: "Appearance",
+    description: "Theme, motion, and density",
+    icon: Palette,
+  },
+  {
+    id: "alerts",
+    label: "Sounds & alerts",
+    description: "How Morrow gets your attention",
+    icon: Bell,
+  },
+  {
+    id: "schedule",
+    label: "Schedule",
+    description: "Timezone, week, and quiet hours",
+    icon: CalendarDays,
+  },
+  {
+    id: "profile",
+    label: "Profile & voice",
+    description: "Identity and communication rules",
+    icon: User,
+  },
+  {
+    id: "data",
+    label: "Data & access",
+    description: "Backup, safety, and future accounts",
+    icon: ShieldCheck,
+  },
 ];
 
-const modes: DevonMode[] = ["Personal", "Work", "Executive", "Creative"];
-
-const defaultSettings: DevonSettings = {
-  displayName: "Big Devon",
-  roleTitle: "Communications Intelligence Lead",
-  organization: "DevonOS",
-  defaultTone: "Premium",
-  defaultMode: "Work",
-  signature: "Big Devon",
-  brandDirection:
-    "Premium white interface, soft platinum depth, deep ink text, blue-violet accents, champagne highlights, elegant spacing, and no green.",
-  designRules:
-    "Use clean negative space, refined typography, subtle glass effects, cinematic cards, soft shadows, and premium editorial layouts. Avoid clutter, fake logos, random data, and cheap AI-looking designs.",
-  writingRules:
-    "Write with clarity, confidence, polish, and structure. Keep official messages respectful, concise, and easy to understand.",
-  postingRules:
-    "Review captions before posting. Confirm sensitive details. Keep public communication accurate, calm, and professional.",
-  systemNotes:
-    "DevonOS is now connected to a local SQLite database through Prisma. Backend routes, saved modules, authentication, file uploads, and team access will be added progressively.",
-  updatedAt: new Date().toISOString(),
-};
-
-function normalizeSettings(settings?: Partial<DevonSettings>): DevonSettings {
-  return {
-    ...defaultSettings,
-    ...settings,
-    updatedAt: settings?.updatedAt ?? new Date().toISOString(),
-  };
-}
+const instantPreferenceKeys: (keyof DevonSettings)[] = [
+  "theme",
+  "density",
+  "motion",
+  "interfaceSounds",
+  "soundVolume",
+  "inAppNotifications",
+  "browserNotifications",
+  "weekStartsOn",
+];
 
 function formatDate(dateString: string) {
-  if (!dateString) return "Not saved yet";
-
-  const date = new Date(dateString);
-
-  if (Number.isNaN(date.getTime())) {
+  if (!dateString || Number.isNaN(Date.parse(dateString))) {
     return "Not saved yet";
   }
 
   return new Intl.DateTimeFormat("en-NG", {
-    weekday: "short",
     day: "numeric",
-    month: "long",
+    month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(date);
-}
-
-function buildSettingsExport(settings: DevonSettings) {
-  return [
-    "DEVONOS SETTINGS PROFILE",
-    "",
-    `Display Name: ${settings.displayName}`,
-    `Role Title: ${settings.roleTitle}`,
-    `Organization: ${settings.organization}`,
-    `Default Tone: ${settings.defaultTone}`,
-    `Default Mode: ${settings.defaultMode}`,
-    `Signature: ${settings.signature}`,
-    "",
-    "Brand Direction:",
-    settings.brandDirection,
-    "",
-    "Design Rules:",
-    settings.designRules,
-    "",
-    "Writing Rules:",
-    settings.writingRules,
-    "",
-    "Posting Rules:",
-    settings.postingRules,
-    "",
-    "System Notes:",
-    settings.systemNotes,
-    "",
-    `Last Updated: ${formatDate(settings.updatedAt)}`,
-  ].join("\n");
+  }).format(new Date(dateString));
 }
 
 export function SettingsCommandClient() {
+  const { applySettings, playSound } = useDevonPreferences();
   const [settings, setSettings] = useState<DevonSettings>(defaultSettings);
-  const [saved, setSaved] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [activeSection, setActiveSection] =
+    useState<SectionId>("appearance");
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [databaseOnline, setDatabaseOnline] = useState<boolean | null>(null);
+  const [recordCount, setRecordCount] = useState(0);
 
   useEffect(() => {
     async function loadSettings() {
       try {
         setErrorMessage("");
 
-        const response = await fetch("/api/settings", {
-          method: "GET",
-          cache: "no-store",
-        });
+        const [settingsResponse, healthResponse] = await Promise.all([
+          fetch("/api/settings", { method: "GET", cache: "no-store" }),
+          fetch("/api/health/db", { method: "GET", cache: "no-store" }),
+        ]);
 
-        if (!response.ok) {
+        if (!settingsResponse.ok) {
           throw new Error("Failed to load settings.");
         }
 
-        const data = (await response.json()) as SettingsApiResponse;
+        const data = (await settingsResponse.json()) as SettingsApiResponse;
 
         if (!data.ok || !data.settings) {
           throw new Error(data.message || "Settings response was invalid.");
         }
 
-        setSettings(normalizeSettings(data.settings));
+        const normalized = normalizeSettings(data.settings);
+        setSettings(normalized);
+        applySettings(normalized);
+
+        if (healthResponse.ok) {
+          const health = (await healthResponse.json()) as {
+            ok: boolean;
+            counts?: Record<string, number>;
+          };
+          setDatabaseOnline(health.ok);
+          setRecordCount(
+            Object.values(health.counts ?? {}).reduce(
+              (total, count) => total + count,
+              0
+            )
+          );
+        } else {
+          setDatabaseOnline(false);
+        }
       } catch (error) {
         console.error("Failed to load settings:", error);
-        setSettings(defaultSettings);
         setErrorMessage(
-          "Settings could not be loaded from the database. Default settings are showing for now."
+          "Morrow could not load your saved preferences. No changes have been made."
         );
+        setDatabaseOnline(false);
       } finally {
         setLoaded(true);
       }
     }
 
-    loadSettings();
-  }, []);
+    void loadSettings();
 
-  const exportText = useMemo(() => buildSettingsExport(settings), [settings]);
+  }, [applySettings]);
+
+  const activeSectionMeta = useMemo(
+    () => sections.find((section) => section.id === activeSection) ?? sections[0],
+    [activeSection]
+  );
 
   function updateField<Key extends keyof DevonSettings>(
     key: Key,
     value: DevonSettings[Key]
   ) {
-    setSettings((current) => ({
-      ...current,
-      [key]: value,
-    }));
+    setSettings((current) => {
+      const next = { ...current, [key]: value };
 
+      if (instantPreferenceKeys.includes(key)) {
+        applySettings(next);
+      }
+
+      return next;
+    });
+    setDirty(true);
     setSaved(false);
     setErrorMessage("");
   }
@@ -201,430 +215,1026 @@ export function SettingsCommandClient() {
       setSaving(true);
       setErrorMessage("");
 
-      const nextSettings: DevonSettings = {
-        ...settings,
-        updatedAt: new Date().toISOString(),
-      };
-
       const response = await fetch("/api/settings", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(nextSettings),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to save settings.");
-      }
 
       const data = (await response.json()) as SettingsApiResponse;
 
-      if (!data.ok || !data.settings) {
-        throw new Error(data.message || "Settings response was invalid.");
+      if (!response.ok || !data.ok || !data.settings) {
+        throw new Error(data.message || "Failed to save settings.");
       }
 
-      setSettings(normalizeSettings(data.settings));
+      const normalized = normalizeSettings(data.settings);
+      setSettings(normalized);
+      applySettings(normalized);
+      setDirty(false);
       setSaved(true);
 
-      window.setTimeout(() => {
-        setSaved(false);
-      }, 1800);
+      if (normalized.interfaceSounds) playSound();
+      window.setTimeout(() => setSaved(false), 2200);
+      return true;
     } catch (error) {
       console.error("Failed to save settings:", error);
-      setErrorMessage("Settings could not be saved. Check the API route and database connection.");
+      setErrorMessage(
+        "Your settings were not saved. Morrow kept your previous database values."
+      );
+      return false;
     } finally {
       setSaving(false);
     }
   }
 
   async function resetSettings() {
-    try {
-      setSaving(true);
-      setErrorMessage("");
-
-      const nextSettings: DevonSettings = {
-        ...defaultSettings,
-        updatedAt: new Date().toISOString(),
-      };
-
-      const response = await fetch("/api/settings", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(nextSettings),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to reset settings.");
-      }
-
-      const data = (await response.json()) as SettingsApiResponse;
-
-      if (!data.ok || !data.settings) {
-        throw new Error(data.message || "Settings response was invalid.");
-      }
-
-      setSettings(normalizeSettings(data.settings));
-      setSaved(true);
-
-      window.setTimeout(() => {
-        setSaved(false);
-      }, 1800);
-    } catch (error) {
-      console.error("Failed to reset settings:", error);
-      setErrorMessage("Settings could not be reset. Check the API route and database connection.");
-    } finally {
-      setSaving(false);
+    if (
+      settings.confirmDestructiveTasks &&
+      !window.confirm(
+        "Reset every Morrow preference and profile rule to its default value?"
+      )
+    ) {
+      return;
     }
-  }
 
-  async function copySettings() {
-    await navigator.clipboard.writeText(exportText);
-    setCopied(true);
-
-    window.setTimeout(() => {
-      setCopied(false);
-    }, 1600);
+    const resetValue = normalizeSettings({
+      ...defaultSettings,
+      updatedAt: new Date().toISOString(),
+    });
+    setSettings(resetValue);
+    applySettings(resetValue);
+    setDirty(true);
+    setSaved(false);
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
-      <div className="space-y-5">
-        <div className="devon-glass rounded-[2.25rem] p-6">
-          <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+    <div className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
+      <aside className="devon-glass h-fit rounded-[2.25rem] p-3 xl:sticky xl:top-[92px]">
+        <div className="p-3 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#17171b] text-white shadow-[0_12px_30px_rgba(0,0,0,0.16)]">
+              <SlidersHorizontal size={18} />
+            </div>
             <div>
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-950/[0.08] bg-white/70 px-4 py-2 text-xs font-semibold text-slate-600 shadow-[0_12px_40px_rgba(15,23,42,0.045)]">
-                <Settings size={14} className="text-[#5B5DF5]" />
-                Identity Settings
-              </div>
-
-              <h2 className="text-2xl font-semibold tracking-tight text-[#0B0D12]">
-                Define your DevonOS profile
-              </h2>
-
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                Save your identity, preferred tone, signature, brand direction,
-                and operating rules directly into your Prisma database.
+              <p className="text-sm font-semibold text-[#17171b]">
+                Control Center
+              </p>
+              <p className="mt-0.5 text-xs text-slate-400">
+                Private workspace
               </p>
             </div>
+          </div>
+        </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
+        <nav className="grid gap-1 sm:grid-cols-2 xl:grid-cols-1">
+          {sections.map((section) => {
+            const Icon = section.icon;
+            const active = section.id === activeSection;
+
+            return (
               <button
-                onClick={resetSettings}
-                disabled={saving || !loaded}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-950/[0.08] bg-white/80 px-5 py-3 text-sm font-semibold text-slate-700 shadow-[0_16px_50px_rgba(15,23,42,0.055)] transition duration-300 hover:-translate-y-0.5 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                type="button"
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`group flex items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${
+                  active
+                    ? "bg-[#17171b] text-white shadow-[0_12px_34px_rgba(0,0,0,0.13)]"
+                    : "text-slate-500 hover:bg-white hover:text-[#17171b]"
+                }`}
               >
-                <RefreshCcw size={16} />
+                <span
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                    active
+                      ? "bg-white/12 text-white"
+                      : "bg-slate-950/[0.045] text-slate-500 group-hover:text-[#5B5DF5]"
+                  }`}
+                >
+                  <Icon size={16} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold">
+                    {section.label}
+                  </span>
+                  <span
+                    className={`mt-0.5 block truncate text-[11px] ${
+                      active ? "text-white/45" : "text-slate-400"
+                    }`}
+                  >
+                    {section.description}
+                  </span>
+                </span>
+                <ChevronRight
+                  size={15}
+                  className={active ? "text-white/38" : "text-slate-300"}
+                />
+              </button>
+            );
+          })}
+          <Link
+            href="/settings/security"
+            className="group flex items-center gap-3 rounded-2xl px-3 py-3 text-left text-slate-500 transition hover:bg-white hover:text-[#17171b]"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#5B5DF5]/10 text-[#5B5DF5]">
+              <Users size={16} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold">
+                Members & approvals
+              </span>
+              <span className="mt-0.5 block truncate text-[11px] text-slate-400">
+                Accounts, approvals, and sessions
+              </span>
+            </span>
+            <ChevronRight size={15} className="text-slate-300" />
+          </Link>
+        </nav>
+
+        <div className="mt-3 rounded-2xl border border-slate-950/[0.06] bg-white/58 p-4">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+            <span
+              className={`h-2 w-2 rounded-full ${
+                databaseOnline === false
+                  ? "bg-red-500"
+                  : databaseOnline === true
+                    ? "bg-emerald-500"
+                    : "bg-slate-300"
+              }`}
+            />
+            {databaseOnline === false
+              ? "Database unavailable"
+              : databaseOnline === true
+                ? "Database healthy"
+                : "Checking database"}
+          </div>
+          <p className="mt-2 text-[11px] leading-5 text-slate-400">
+            {recordCount} saved workspace records · Last settings save{" "}
+            {formatDate(settings.updatedAt)}
+          </p>
+        </div>
+      </aside>
+
+      <div className="min-w-0 space-y-5">
+        <div className="devon-glass-dark devon-ink-shine rounded-[2.25rem] p-5 text-white sm:p-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#17171b]">
+                <activeSectionMeta.icon size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">
+                  System preferences
+                </p>
+                <h2 className="mt-1 text-xl font-semibold">
+                  {activeSectionMeta.label}
+                </h2>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={resetSettings}
+                disabled={!loaded || saving}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 text-sm font-semibold text-white/68 transition hover:bg-white/10 hover:text-white disabled:opacity-40"
+              >
+                <RefreshCcw size={15} />
                 Reset
               </button>
-
               <button
+                type="button"
                 onClick={saveSettings}
-                disabled={saving || !loaded}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0B0D12] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_55px_rgba(15,23,42,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#171A23] disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!loaded || saving || !dirty}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white px-5 text-sm font-semibold text-[#17171b] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 {saved ? <CheckCircle2 size={16} /> : <Save size={16} />}
-                {saved ? "Saved" : saving ? "Saving..." : "Save Settings"}
+                {saved ? "Saved" : saving ? "Saving…" : "Save changes"}
               </button>
             </div>
           </div>
 
-          {errorMessage ? (
-            <div className="mb-5 rounded-[1.4rem] border border-red-100 bg-red-50 p-4 text-red-600">
-              <div className="flex gap-3">
-                <AlertCircle size={18} className="mt-0.5 shrink-0" />
-                <p className="text-sm leading-6">{errorMessage}</p>
-              </div>
-            </div>
-          ) : null}
-
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Display Name
-              </span>
-              <input
-                value={settings.displayName}
-                onChange={(event) =>
-                  updateField("displayName", event.target.value)
-                }
-                placeholder="Big Devon"
-                className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Role Title
-              </span>
-              <input
-                value={settings.roleTitle}
-                onChange={(event) =>
-                  updateField("roleTitle", event.target.value)
-                }
-                placeholder="Communications Intelligence Lead"
-                className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Organization / Workspace
-              </span>
-              <input
-                value={settings.organization}
-                onChange={(event) =>
-                  updateField("organization", event.target.value)
-                }
-                placeholder="DevonOS"
-                className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Signature
-              </span>
-              <input
-                value={settings.signature}
-                onChange={(event) => updateField("signature", event.target.value)}
-                placeholder="Big Devon"
-                className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Default Tone
-              </span>
-              <select
-                value={settings.defaultTone}
-                onChange={(event) =>
-                  updateField("defaultTone", event.target.value as DevonTone)
-                }
-                className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
-              >
-                {tones.map((tone) => (
-                  <option key={tone}>{tone}</option>
-                ))}
-              </select>
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Default Mode
-              </span>
-              <select
-                value={settings.defaultMode}
-                onChange={(event) =>
-                  updateField("defaultMode", event.target.value as DevonMode)
-                }
-                className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
-              >
-                {modes.map((mode) => (
-                  <option key={mode}>{mode}</option>
-                ))}
-              </select>
-            </label>
-
-            <label className="space-y-2 md:col-span-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Brand Direction
-              </span>
-              <textarea
-                value={settings.brandDirection}
-                onChange={(event) =>
-                  updateField("brandDirection", event.target.value)
-                }
-                rows={4}
-                className="w-full resize-none rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium leading-6 text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
-              />
-            </label>
-
-            <label className="space-y-2 md:col-span-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Design Rules
-              </span>
-              <textarea
-                value={settings.designRules}
-                onChange={(event) =>
-                  updateField("designRules", event.target.value)
-                }
-                rows={4}
-                className="w-full resize-none rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium leading-6 text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
-              />
-            </label>
-
-            <label className="space-y-2 md:col-span-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Writing Rules
-              </span>
-              <textarea
-                value={settings.writingRules}
-                onChange={(event) =>
-                  updateField("writingRules", event.target.value)
-                }
-                rows={4}
-                className="w-full resize-none rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium leading-6 text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
-              />
-            </label>
-
-            <label className="space-y-2 md:col-span-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Posting Rules
-              </span>
-              <textarea
-                value={settings.postingRules}
-                onChange={(event) =>
-                  updateField("postingRules", event.target.value)
-                }
-                rows={4}
-                className="w-full resize-none rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium leading-6 text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
-              />
-            </label>
-
-            <label className="space-y-2 md:col-span-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                System Notes
-              </span>
-              <textarea
-                value={settings.systemNotes}
-                onChange={(event) =>
-                  updateField("systemNotes", event.target.value)
-                }
-                rows={4}
-                className="w-full resize-none rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium leading-6 text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
-              />
-            </label>
+          <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-white/10 pt-4 text-xs text-white/44">
+            <span className="inline-flex items-center gap-1.5">
+              <LockKeyhole size={13} />
+              Owner only
+            </span>
+            <span aria-hidden>·</span>
+            <span>{dirty ? "Unsaved changes" : "Everything is saved"}</span>
           </div>
         </div>
-      </div>
 
-      <div className="space-y-5">
-        <div className="devon-glass-dark devon-ink-shine rounded-[2.25rem] p-6 text-white">
-          <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#0B0D12] shadow-[0_22px_70px_rgba(255,255,255,0.18)]">
-              <Crown size={21} />
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/34">
-                System Identity
-              </p>
-              <h2 className="mt-1 text-xl font-semibold tracking-tight">
-                {settings.displayName || "DevonOS"}
-              </h2>
+        {errorMessage ? (
+          <div className="rounded-[1.5rem] border border-red-200 bg-red-50 p-4 text-red-700">
+            <div className="flex gap-3">
+              <AlertCircle size={18} className="mt-0.5 shrink-0" />
+              <p className="text-sm leading-6">{errorMessage}</p>
             </div>
           </div>
+        ) : null}
 
-          <div className="space-y-3">
-            <InfoRow label="Role" value={settings.roleTitle} />
-            <InfoRow label="Mode" value={settings.defaultMode} />
-            <InfoRow label="Tone" value={settings.defaultTone} />
-            <InfoRow label="Updated" value={formatDate(settings.updatedAt)} />
-          </div>
-
-          <button
-            onClick={copySettings}
-            disabled={!loaded}
-            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-[#0B0D12] shadow-[0_18px_55px_rgba(255,255,255,0.14)] transition duration-300 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
-            {copied ? "Copied" : "Copy Settings Profile"}
-          </button>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-2">
-          <SettingCard
-            title="Identity"
-            value={settings.displayName}
-            note={settings.roleTitle}
-            icon={User}
+        {activeSection === "appearance" ? (
+          <AppearanceSection settings={settings} updateField={updateField} />
+        ) : null}
+        {activeSection === "alerts" ? (
+          <AlertsSection
+            settings={settings}
+            updateField={updateField}
+            playSound={playSound}
+            onSave={saveSettings}
           />
-          <SettingCard
-            title="Tone"
-            value={settings.defaultTone}
-            note={settings.defaultMode}
-            icon={Type}
+        ) : null}
+        {activeSection === "schedule" ? (
+          <ScheduleSection settings={settings} updateField={updateField} />
+        ) : null}
+        {activeSection === "profile" ? (
+          <ProfileSection settings={settings} updateField={updateField} />
+        ) : null}
+        {activeSection === "data" ? (
+          <DataSection
+            settings={settings}
+            updateField={updateField}
+            databaseOnline={databaseOnline}
+            recordCount={recordCount}
           />
-          <SettingCard
-            title="Brand"
-            value="Premium"
-            note="White / Ink / Violet / Champagne"
-            icon={Palette}
-          />
-          <SettingCard
-            title="Storage"
-            value="Database"
-            note="Prisma SQLite mode"
-            icon={Shield}
-          />
-        </div>
-
-        <div className="devon-glass rounded-[2.25rem] p-6">
-          <div className="mb-5 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#FFF8E1] text-[#8A6B22]">
-              <FileText size={19} />
-            </div>
-
-            <div>
-              <h2 className="text-xl font-semibold tracking-tight text-[#0B0D12]">
-                Settings Preview
-              </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Copy or review your saved database profile.
-              </p>
-            </div>
-          </div>
-
-          <div className="rounded-[1.55rem] border border-slate-950/[0.08] bg-white/70 p-4">
-            <pre className="max-h-[680px] overflow-auto whitespace-pre-wrap font-sans text-sm leading-7 text-slate-700">
-              {loaded ? exportText : "Loading settings from database..."}
-            </pre>
-          </div>
-        </div>
+        ) : null}
       </div>
     </div>
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+type UpdateField = <Key extends keyof DevonSettings>(
+  key: Key,
+  value: DevonSettings[Key]
+) => void;
+
+function AppearanceSection({
+  settings,
+  updateField,
+}: {
+  settings: DevonSettings;
+  updateField: UpdateField;
+}) {
+  const themes: {
+    value: DevonTheme;
+    label: string;
+    note: string;
+    icon: ElementType;
+  }[] = [
+    {
+      value: "light",
+      label: "Light",
+      note: "Bright platinum canvas",
+      icon: Sun,
+    },
+    {
+      value: "dark",
+      label: "Dark",
+      note: "Deep ink workspace",
+      icon: Moon,
+    },
+    {
+      value: "system",
+      label: "Automatic",
+      note: "Match this device",
+      icon: Laptop,
+    },
+  ];
+
   return (
-    <div className="flex items-center justify-between gap-4 rounded-[1.35rem] border border-white/10 bg-white/[0.055] px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/34">
-        {label}
-      </p>
-      <p className="text-right text-sm font-medium text-white/72">
-        {value || "Not set"}
-      </p>
+    <div className="space-y-5">
+      <SettingsPanel
+        eyebrow="Appearance"
+        title="Choose the atmosphere."
+        description="Theme changes apply instantly and stay synchronized with your saved workspace."
+        icon={Palette}
+      >
+        <div className="grid gap-3 md:grid-cols-3">
+          {themes.map((theme) => {
+            const Icon = theme.icon;
+            const active = settings.theme === theme.value;
+
+            return (
+              <button
+                type="button"
+                key={theme.value}
+                onClick={() => updateField("theme", theme.value)}
+                aria-pressed={active}
+                className={`rounded-[1.5rem] border p-4 text-left transition ${
+                  active
+                    ? "border-[#5B5DF5]/30 bg-[#EEF2FF] shadow-[0_14px_38px_rgba(91,93,245,0.1)]"
+                    : "border-slate-950/[0.07] bg-white/64 hover:bg-white"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <span
+                    className={`flex h-11 w-11 items-center justify-center rounded-2xl ${
+                      active
+                        ? "bg-[#5B5DF5] text-white"
+                        : "bg-slate-950/[0.045] text-slate-500"
+                    }`}
+                  >
+                    <Icon size={18} />
+                  </span>
+                  {active ? (
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#17171b] text-white">
+                      <Check size={13} />
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-5 text-sm font-semibold text-[#17171b]">
+                  {theme.label}
+                </p>
+                <p className="mt-1 text-xs text-slate-400">{theme.note}</p>
+              </button>
+            );
+          })}
+        </div>
+      </SettingsPanel>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <SettingsPanel
+          eyebrow="Layout"
+          title="Information density"
+          description="Compact mode reduces spacing without shrinking touch targets."
+          icon={Gauge}
+        >
+          <SegmentedControl<DevonDensity>
+            value={settings.density}
+            options={[
+              { value: "comfortable", label: "Comfortable" },
+              { value: "compact", label: "Compact" },
+            ]}
+            onChange={(value) => updateField("density", value)}
+          />
+        </SettingsPanel>
+
+        <SettingsPanel
+          eyebrow="Motion"
+          title="Interface movement"
+          description="Reduced motion removes non-essential transitions and animated effects."
+          icon={MonitorSmartphone}
+        >
+          <SegmentedControl<DevonMotion>
+            value={settings.motion}
+            options={[
+              { value: "system", label: "System" },
+              { value: "full", label: "Full" },
+              { value: "reduced", label: "Reduced" },
+            ]}
+            onChange={(value) => updateField("motion", value)}
+          />
+        </SettingsPanel>
+      </div>
     </div>
   );
 }
 
-function SettingCard({
+function AlertsSection({
+  settings,
+  updateField,
+  playSound,
+  onSave,
+}: {
+  settings: DevonSettings;
+  updateField: UpdateField;
+  playSound: () => void;
+  onSave: () => Promise<boolean>;
+}) {
+  return (
+    <div className="space-y-5">
+      <SettingsPanel
+        eyebrow="Sound"
+        title="A quiet, premium signal."
+        description="Morrow uses one short chime for important confirmations and alerts—never constant button noise."
+        icon={settings.interfaceSounds ? Volume2 : VolumeX}
+      >
+        <PreferenceRow
+          title="Interface sounds"
+          description="Play the Morrow chime for important confirmations."
+          control={
+            <Switch
+              checked={settings.interfaceSounds}
+              onChange={(checked) => updateField("interfaceSounds", checked)}
+              label="Interface sounds"
+            />
+          }
+        />
+
+        <div className="mt-3 rounded-[1.4rem] border border-slate-950/[0.07] bg-white/62 p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-[#17171b]">
+                Sound level
+              </p>
+              <p className="mt-1 text-xs text-slate-400">
+                {settings.soundVolume}% volume
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={playSound}
+              disabled={!settings.interfaceSounds}
+              className="rounded-xl border border-slate-950/[0.08] bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:text-[#17171b] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Preview sound
+            </button>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            value={settings.soundVolume}
+            disabled={!settings.interfaceSounds}
+            onChange={(event) =>
+              updateField("soundVolume", Number(event.target.value))
+            }
+            aria-label="Sound volume"
+            className="devon-range mt-5 w-full"
+          />
+        </div>
+      </SettingsPanel>
+
+      <SettingsPanel
+        eyebrow="In-app center"
+        title="Keep the command space quietly aware."
+        description="Deadlines, daily briefs, birthdays, operational alerts, and delivery receipts stay visible inside Morrow."
+        icon={Bell}
+      >
+        <PreferenceRow
+          title="In-app notification center"
+          description="Show saved alerts inside Morrow before any external channel is considered."
+          control={
+            <Switch
+              checked={settings.inAppNotifications}
+              onChange={(checked) => updateField("inAppNotifications", checked)}
+              label="In-app notifications"
+            />
+          }
+        />
+      </SettingsPanel>
+
+      <NotificationDeliveryCenter
+        settings={settings}
+        updateField={updateField}
+        onSave={onSave}
+      />
+    </div>
+  );
+}
+
+function ScheduleSection({
+  settings,
+  updateField,
+}: {
+  settings: DevonSettings;
+  updateField: UpdateField;
+}) {
+  return (
+    <div className="space-y-5">
+      <SettingsPanel
+        eyebrow="Daily rhythm"
+        title="Set the operating clock."
+        description="Calendar dates, daily briefs, quiet hours, and scheduled intelligence use this timezone."
+        icon={Clock3}
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Timezone">
+            <select
+              value={settings.timezone}
+              onChange={(event) =>
+                updateField("timezone", event.target.value)
+              }
+              className="devon-settings-input"
+            >
+              {devonTimezones.map((timezone) => (
+                <option key={timezone.value} value={timezone.value}>
+                  {timezone.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Daily brief">
+            <input
+              type="time"
+              value={settings.dailyBriefTime}
+              onChange={(event) =>
+                updateField("dailyBriefTime", event.target.value)
+              }
+              className="devon-settings-input"
+            />
+          </Field>
+
+          <Field label="Week starts on">
+            <SegmentedControl<WeekStartsOn>
+              value={settings.weekStartsOn}
+              options={[
+                { value: "monday", label: "Monday" },
+                { value: "sunday", label: "Sunday" },
+              ]}
+              onChange={(value) => updateField("weekStartsOn", value)}
+            />
+          </Field>
+        </div>
+      </SettingsPanel>
+
+      <SettingsPanel
+        eyebrow="Quiet hours"
+        title="Protect your personal time."
+        description="Non-critical notifications wait until quiet hours end. Critical alerts remain visible in the app."
+        icon={Moon}
+      >
+        <PreferenceRow
+          title="Use quiet hours"
+          description="Pause sound, browser, email, and phone delivery overnight."
+          control={
+            <Switch
+              checked={settings.quietHoursEnabled}
+              onChange={(checked) =>
+                updateField("quietHoursEnabled", checked)
+              }
+              label="Quiet hours"
+            />
+          }
+        />
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <Field label="Quiet hours start">
+            <input
+              type="time"
+              value={settings.quietHoursStart}
+              disabled={!settings.quietHoursEnabled}
+              onChange={(event) =>
+                updateField("quietHoursStart", event.target.value)
+              }
+              className="devon-settings-input"
+            />
+          </Field>
+          <Field label="Quiet hours end">
+            <input
+              type="time"
+              value={settings.quietHoursEnd}
+              disabled={!settings.quietHoursEnabled}
+              onChange={(event) =>
+                updateField("quietHoursEnd", event.target.value)
+              }
+              className="devon-settings-input"
+            />
+          </Field>
+        </div>
+      </SettingsPanel>
+    </div>
+  );
+}
+
+function ProfileSection({
+  settings,
+  updateField,
+}: {
+  settings: DevonSettings;
+  updateField: UpdateField;
+}) {
+  return (
+    <div className="space-y-5">
+      <SettingsPanel
+        eyebrow="Owner profile"
+        title="Your name across Morrow."
+        description="This identity appears in briefs, reports, approvals, and future account activity."
+        icon={Crown}
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Display name">
+            <input
+              value={settings.displayName}
+              onChange={(event) =>
+                updateField("displayName", event.target.value)
+              }
+              className="devon-settings-input"
+            />
+          </Field>
+          <Field label="Role title">
+            <input
+              value={settings.roleTitle}
+              onChange={(event) =>
+                updateField("roleTitle", event.target.value)
+              }
+              className="devon-settings-input"
+            />
+          </Field>
+          <Field label="Organization">
+            <input
+              value={settings.organization}
+              onChange={(event) =>
+                updateField("organization", event.target.value)
+              }
+              className="devon-settings-input"
+            />
+          </Field>
+          <Field label="Signature">
+            <input
+              value={settings.signature}
+              onChange={(event) =>
+                updateField("signature", event.target.value)
+              }
+              className="devon-settings-input"
+            />
+          </Field>
+          <Field label="Default tone">
+            <select
+              value={settings.defaultTone}
+              onChange={(event) =>
+                updateField("defaultTone", event.target.value as DevonTone)
+              }
+              className="devon-settings-input"
+            >
+              {devonTones.map((tone) => (
+                <option key={tone}>{tone}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Default mode">
+            <select
+              value={settings.defaultMode}
+              onChange={(event) =>
+                updateField("defaultMode", event.target.value as DevonMode)
+              }
+              className="devon-settings-input"
+            >
+              {devonModes.map((mode) => (
+                <option key={mode}>{mode}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      </SettingsPanel>
+
+      <SettingsPanel
+        eyebrow="Communication rules"
+        title="Keep every output recognizably yours."
+        description="These rules will ground briefs, captions, reports, and assisted drafting."
+        icon={Type}
+      >
+        <div className="grid gap-4">
+          <TextAreaField
+            label="Brand direction"
+            value={settings.brandDirection}
+            onChange={(value) => updateField("brandDirection", value)}
+          />
+          <TextAreaField
+            label="Writing rules"
+            value={settings.writingRules}
+            onChange={(value) => updateField("writingRules", value)}
+          />
+          <TextAreaField
+            label="Posting and approval rules"
+            value={settings.postingRules}
+            onChange={(value) => updateField("postingRules", value)}
+          />
+        </div>
+      </SettingsPanel>
+    </div>
+  );
+}
+
+function DataSection({
+  settings,
+  updateField,
+  databaseOnline,
+  recordCount,
+}: {
+  settings: DevonSettings;
+  updateField: UpdateField;
+  databaseOnline: boolean | null;
+  recordCount: number;
+}) {
+  const roles = [
+    {
+      name: "Owner",
+      description: "Everything, including billing and access",
+      active: true,
+    },
+    {
+      name: "Assistant",
+      description: "Schedules, drafts, records, and assigned approvals",
+      active: false,
+    },
+    {
+      name: "Contributor",
+      description: "Assigned projects and content only",
+      active: false,
+    },
+    {
+      name: "Viewer",
+      description: "Read-only access to selected modules",
+      active: false,
+    },
+  ];
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-5 lg:grid-cols-2">
+        <SettingsPanel
+          eyebrow="Database"
+          title={databaseOnline ? "Your records are healthy." : "Health check"}
+          description={`${recordCount} records are currently stored in the private workspace database.`}
+          icon={Cloud}
+        >
+          <div className="rounded-[1.45rem] border border-slate-950/[0.07] bg-white/62 p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span
+                  className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+                    databaseOnline
+                      ? "bg-emerald-50 text-emerald-600"
+                      : "bg-slate-100 text-slate-400"
+                  }`}
+                >
+                  <DatabaseBackup size={17} />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-[#17171b]">
+                    Local encrypted boundary
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Hosted backups arrive in production
+                  </p>
+                </div>
+              </div>
+              <StatusPill
+                label={databaseOnline ? "Connected" : "Checking"}
+                positive={Boolean(databaseOnline)}
+              />
+            </div>
+          </div>
+        </SettingsPanel>
+
+        <SettingsPanel
+          eyebrow="Backup"
+          title="Own a copy of your data."
+          description="Download every saved module as one readable JSON archive."
+          icon={Download}
+        >
+          <a
+            href="/api/backup"
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#17171b] px-5 text-sm font-semibold text-white shadow-[0_14px_36px_rgba(0,0,0,0.14)] transition hover:-translate-y-0.5"
+          >
+            <Download size={16} />
+            Download full backup
+          </a>
+          <p className="mt-3 text-xs leading-5 text-slate-400">
+            The backup contains workspace records and preferences. It never
+            includes passwords or future integration secrets.
+          </p>
+        </SettingsPanel>
+      </div>
+
+      <SettingsPanel
+        eyebrow="Safety"
+        title="Protect high-impact actions."
+        description="Deletion, bulk updates, access changes, and future external publishing should require clear confirmation."
+        icon={LockKeyhole}
+      >
+        <PreferenceRow
+          title="Confirm destructive actions"
+          description="Ask before deleting records, resetting settings, or replacing stored data."
+          control={
+            <Switch
+              checked={settings.confirmDestructiveTasks}
+              onChange={(checked) =>
+                updateField("confirmDestructiveTasks", checked)
+              }
+              label="Confirm destructive actions"
+            />
+          }
+        />
+      </SettingsPanel>
+
+      <SettingsPanel
+        eyebrow="Access model"
+        title="Members, approvals, and account security."
+        description="Review verified account requests, manage active members, change your password, and revoke sessions."
+        icon={Users}
+      >
+        <Link
+          href="/settings/security"
+          className="mb-4 flex items-center justify-between gap-4 rounded-[1.4rem] bg-[#17171b] p-4 text-white shadow-[0_18px_55px_rgba(23,23,27,0.16)] transition hover:-translate-y-0.5"
+        >
+          <div>
+            <p className="text-sm font-extrabold">Open identity & access</p>
+            <p className="mt-1 text-xs font-semibold text-white/42">
+              Members, approval requests, credentials, and active sessions.
+            </p>
+          </div>
+          <ChevronRight size={17} className="shrink-0 text-white/55" />
+        </Link>
+        <div className="grid gap-3 md:grid-cols-2">
+          {roles.map((role) => (
+            <div
+              key={role.name}
+              className={`rounded-[1.4rem] border p-4 ${
+                role.active
+                  ? "border-[#5B5DF5]/20 bg-[#EEF2FF]/75"
+                  : "border-slate-950/[0.07] bg-white/55"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-[#17171b]">
+                  {role.name}
+                </p>
+                <StatusPill
+                  label={role.active ? "Active" : "Locked"}
+                  positive={role.active}
+                />
+              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-400">
+                {role.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </SettingsPanel>
+    </div>
+  );
+}
+
+function SettingsPanel({
+  eyebrow,
   title,
-  value,
-  note,
+  description,
+  icon: Icon,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  icon: ElementType;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="devon-glass rounded-[2.25rem] p-5 sm:p-6">
+      <div className="mb-5 flex items-start gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#5B5DF5]">
+          <Icon size={18} />
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+            {eyebrow}
+          </p>
+          <h3 className="mt-1 text-xl font-semibold tracking-tight text-[#17171b]">
+            {title}
+          </h3>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+            {description}
+          </p>
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function PreferenceRow({
+  title,
+  description,
+  control,
   icon: Icon,
 }: {
   title: string;
-  value: string;
-  note: string;
-  icon: ElementType;
+  description: string;
+  control: React.ReactNode;
+  icon?: ElementType;
 }) {
   return (
-    <div className="devon-glass rounded-[1.7rem] p-5">
-      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#5B5DF5]">
-        <Icon size={18} />
+    <div className="flex items-center justify-between gap-4 rounded-[1.4rem] border border-slate-950/[0.07] bg-white/62 p-4">
+      <div className="flex min-w-0 items-start gap-3">
+        {Icon ? (
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-950/[0.045] text-slate-500">
+            <Icon size={15} />
+          </span>
+        ) : null}
+        <div>
+          <p className="text-sm font-semibold text-[#17171b]">{title}</p>
+          <p className="mt-1 text-xs leading-5 text-slate-400">{description}</p>
+        </div>
       </div>
-
-      <p className="text-sm font-medium text-slate-400">{title}</p>
-      <p className="mt-2 text-xl font-semibold tracking-[-0.04em] text-[#0B0D12]">
-        {value || "Not set"}
-      </p>
-      <p className="mt-1 text-xs font-medium text-slate-400">{note}</p>
+      <div className="shrink-0">{control}</div>
     </div>
+  );
+}
+
+function Switch({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className={`relative h-7 w-12 rounded-full transition ${
+        checked ? "bg-[#5B5DF5]" : "bg-slate-200"
+      }`}
+    >
+      <span
+        className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition ${
+          checked ? "left-6" : "left-1"
+        }`}
+      />
+    </button>
+  );
+}
+
+function SegmentedControl<Value extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: Value;
+  options: { value: Value; label: string }[];
+  onChange: (value: Value) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1 rounded-2xl border border-slate-950/[0.07] bg-slate-950/[0.035] p-1">
+      {options.map((option) => (
+        <button
+          type="button"
+          key={option.value}
+          onClick={() => onChange(option.value)}
+          aria-pressed={value === option.value}
+          className={`min-h-10 flex-1 rounded-xl px-3 text-xs font-semibold transition ${
+            value === option.value
+              ? "bg-white text-[#17171b] shadow-sm"
+              : "text-slate-400 hover:text-slate-600"
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="space-y-2">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.17em] text-slate-400">
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function TextAreaField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <Field label={label}>
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        rows={4}
+        className="devon-settings-input resize-y leading-6"
+      />
+    </Field>
+  );
+}
+
+function StatusPill({
+  label,
+  positive = false,
+}: {
+  label: string;
+  positive?: boolean;
+}) {
+  return (
+    <span
+      className={`rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+        positive
+          ? "bg-emerald-50 text-emerald-700"
+          : "bg-slate-100 text-slate-500"
+      }`}
+    >
+      {label}
+    </span>
   );
 }

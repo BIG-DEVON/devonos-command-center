@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createNotification } from "@/lib/notifications";
 import { localDateKey } from "@/lib/date";
 import {
   ensureAutopilotTasks,
@@ -39,7 +40,7 @@ function buildMissionPlan(brief: AutopilotBriefResponse, created: number, skippe
           .join("\n\n");
 
   return [
-    "DEVONOS DAILY MISSION PLAN",
+    "MORROW DAILY MISSION PLAN",
     "",
     `Date: ${formatLongDate()}`,
     `System Health: ${brief.health.toUpperCase()}`,
@@ -91,7 +92,7 @@ async function upsertDailyMissionPlan(
         sourceText: brief.briefText,
         output,
         notes:
-          "Updated automatically by DevonOS Start My Day. This draft is refreshed instead of duplicated.",
+          "Updated automatically by Morrow Start My Day. This draft is refreshed instead of duplicated.",
       },
     });
   }
@@ -107,7 +108,7 @@ async function upsertDailyMissionPlan(
       sourceText: brief.briefText,
       output,
       notes:
-        "Generated automatically by DevonOS Start My Day. Use this as the daily work plan.",
+        "Generated automatically by Morrow Start My Day. Use this as the daily work plan.",
     },
   });
 }
@@ -122,13 +123,25 @@ export async function POST(request: Request) {
       taskResult.created,
       taskResult.skipped
     );
+    const resultMessage =
+      taskResult.created > 0
+        ? `Start My Day complete. Morrow created ${taskResult.created} new task(s), skipped ${taskResult.skipped} existing task(s), and prepared your Daily Mission Plan.`
+        : `Start My Day complete. No new tasks were needed, ${taskResult.skipped} existing task(s) already cover the current signals, and your Daily Mission Plan was refreshed.`;
+
+    await createNotification({
+      title: "Your daily mission plan is ready",
+      message: resultMessage,
+      category: "Autopilot",
+      severity: brief.health === "critical" ? "warning" : "success",
+      href: "/autopilot",
+      sourceType: "AiDraft",
+      sourceId: aiDraft.id,
+      dedupeKey: `start-my-day:${todayKey()}`,
+    });
 
     return NextResponse.json({
       ok: true,
-      message:
-        taskResult.created > 0
-          ? `Start My Day complete. DevonOS created ${taskResult.created} new task(s), skipped ${taskResult.skipped} existing task(s), and prepared your Daily Mission Plan.`
-          : `Start My Day complete. No new tasks were needed, ${taskResult.skipped} existing task(s) already cover the current signals, and your Daily Mission Plan was refreshed.`,
+      message: resultMessage,
       createdTasks: taskResult.created,
       skippedTasks: taskResult.skipped,
       health: brief.health,
@@ -143,7 +156,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: "DevonOS could not complete Start My Day.",
+        message: "Morrow could not complete Start My Day.",
       },
       { status: 500 }
     );

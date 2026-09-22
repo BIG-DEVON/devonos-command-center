@@ -14,6 +14,7 @@ import {
   Clipboard,
   Clock3,
   Copy,
+  FileCheck2,
   Folder,
   Newspaper,
   RefreshCcw,
@@ -24,6 +25,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import { useDevonPreferences } from "@/components/providers/devon-preferences-provider";
 
 type SignalSeverity = "critical" | "high" | "medium" | "low";
 
@@ -47,6 +49,7 @@ type AutopilotCounts = {
   birthdays: number;
   aiDrafts: number;
   newsItems: number;
+  approvals: number;
   signals: number;
   critical: number;
   high: number;
@@ -74,6 +77,7 @@ const emptyCounts: AutopilotCounts = {
   birthdays: 0,
   aiDrafts: 0,
   newsItems: 0,
+  approvals: 0,
   signals: 0,
   critical: 0,
   high: 0,
@@ -152,10 +156,12 @@ function moduleIcon(module: string): ElementType {
   if (lower.includes("birthday")) return Users;
   if (lower.includes("ai")) return Bot;
   if (lower.includes("news")) return Newspaper;
+  if (lower.includes("approval")) return FileCheck2;
   return Zap;
 }
 
 export function DashboardCommandClient() {
+  const { settings } = useDevonPreferences();
   const [data, setData] = useState<AutopilotResponse | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -243,6 +249,12 @@ export function DashboardCommandClient() {
         icon: Newspaper,
         href: "/news/collector",
       },
+      {
+        title: "Approvals",
+        value: counts.approvals,
+        icon: FileCheck2,
+        href: "/approvals",
+      },
     ],
     [counts]
   );
@@ -290,7 +302,7 @@ export function DashboardCommandClient() {
 
             <div className="my-auto py-10">
               <p className="text-sm font-medium text-white/48">
-                {getGreeting()}, Big Devon
+                {getGreeting()}, {settings.displayName || "Big Devon"}
               </p>
               <h2 className="mt-3 max-w-3xl text-[clamp(2.7rem,6vw,5.6rem)] font-semibold leading-[0.9] tracking-[-0.075em] text-white">
                 {health.title}

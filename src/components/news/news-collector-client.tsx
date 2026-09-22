@@ -134,7 +134,7 @@ function buildDailyBrief(items: NewsItem[]) {
   const orderedItems = [...highItems, ...mediumItems, ...lowItems];
 
   return [
-    "DEVONOS DAILY NEWS INTELLIGENCE BRIEF",
+    "MORROW DAILY NEWS INTELLIGENCE BRIEF",
     "",
     `Generated: ${formatDate(new Date().toISOString())}`,
     `Total Signals: ${items.length}`,

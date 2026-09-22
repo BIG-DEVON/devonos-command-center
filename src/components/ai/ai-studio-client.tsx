@@ -274,7 +274,7 @@ function generateOutputFromForm(form: AiForm) {
     notesBlock,
     "",
     "Refinement Direction:",
-    "Make it clear, polished, premium, structured, and ready for DevonOS workflow review.",
+    "Make it clear, polished, premium, structured, and ready for Morrow workflow review.",
   ].join("\n");
 }
 
@@ -663,7 +663,7 @@ export function AiStudioClient() {
                 onChange={(event) =>
                   updateForm("instruction", event.target.value)
                 }
-                placeholder="Tell DevonOS what to generate, rewrite, summarize, or design..."
+                placeholder="Tell Morrow what to generate, rewrite, summarize, or design..."
                 rows={5}
                 className="w-full resize-none rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium leading-6 text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               />

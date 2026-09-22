@@ -1,9 +1,21 @@
 import { AppShell } from "@/components/layout/app-shell";
+import { redirect } from "next/navigation";
+import { getCurrentMorrowSession } from "@/lib/morrow-session";
 
-export default function ProtectedAppLayout({
+export default async function ProtectedAppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <AppShell>{children}</AppShell>;
+  const session = await getCurrentMorrowSession();
+  if (!session) redirect("/login");
+
+  return (
+    <AppShell
+      displayName={session.displayName}
+      showOnboarding={!session.onboardingCompletedAt}
+    >
+      {children}
+    </AppShell>
+  );
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isValidBirthdayDate } from "@/lib/birthday-content";
 
 type RouteContext = {
   params: Promise<{
@@ -11,6 +12,25 @@ export async function PATCH(request: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
     const body = await request.json();
+    const current = await prisma.birthdayProfile.findUnique({ where: { id } });
+
+    if (!current) {
+      return NextResponse.json(
+        { ok: false, message: "Birthday profile not found." },
+        { status: 404 }
+      );
+    }
+
+    const month =
+      body.month === undefined ? current.month : Number(body.month);
+    const day = body.day === undefined ? current.day : Number(body.day);
+
+    if (!isValidBirthdayDate(month, day)) {
+      return NextResponse.json(
+        { ok: false, message: "A valid birthday month and day are required." },
+        { status: 400 }
+      );
+    }
 
     const profile = await prisma.birthdayProfile.update({
       where: { id },
@@ -22,15 +42,19 @@ export async function PATCH(request: Request, context: RouteContext) {
         month:
           body.month === undefined
             ? undefined
-            : Math.min(12, Math.max(1, Number(body.month) || 1)),
+            : month,
         day:
           body.day === undefined
             ? undefined
-            : Math.min(31, Math.max(1, Number(body.day) || 1)),
+            : day,
         photoUrl:
           body.photoUrl === undefined
             ? undefined
             : String(body.photoUrl).trim(),
+        hallMemberId:
+          body.hallMemberId === undefined
+            ? undefined
+            : String(body.hallMemberId ?? "").trim() || null,
         notes:
           body.notes === undefined ? undefined : String(body.notes).trim(),
         preferredTone:

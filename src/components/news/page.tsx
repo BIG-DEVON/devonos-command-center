@@ -39,7 +39,7 @@ const workflow = [
   },
   {
     title: "Generate Brief",
-    text: "DevonOS formats the items into a clean internal update for your group.",
+    text: "Morrow formats the items into a clean internal update for your group.",
     icon: Bot,
   },
   {
@@ -157,7 +157,7 @@ export default function NewsPage() {
 
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-950/[0.08] bg-white/70 px-4 py-2 text-xs font-semibold text-slate-500">
               <Sparkles size={14} className="text-[#8A6B22]" />
-              DevonOS curated
+              Morrow curated
             </div>
           </div>
 

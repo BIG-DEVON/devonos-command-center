@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1875" height="2775" viewBox="0 0 1875 2775">
+  <title>Systemic Governance Quality Through Digital Transformation — The Passage</title>
+  <desc>Minimal 6 by 9 inch paperback front-cover concept with one eighth inch bleed, prepared at 300 pixels per inch.</desc>
+
+  <rect width="1875" height="2775" fill="#f4f0e8"/>
+
+  <g id="title" text-rendering="geometricPrecision">
+    <text x="230" y="380"
+          fill="#142d38"
+          font-family="'New York', Georgia, serif"
+          font-size="110" font-weight="600" letter-spacing="-1.6">
+      Systemic Governance
+    </text>
+    <text x="230" y="514"
+          fill="#142d38"
+          font-family="'New York', Georgia, serif"
+          font-size="110" font-weight="600" letter-spacing="-1.6">
+      Quality Through
+    </text>
+    <text x="230" y="665"
+          fill="#142d38"
+          font-family="'New York', Georgia, serif"
+          font-size="122" font-weight="600" letter-spacing="-1.9">
+      Digital Transformation
+    </text>
+
+    <text x="234" y="812"
+          fill="#506169"
+          font-family="'Avenir Next', Avenir, Helvetica, Arial, sans-serif"
+          font-size="35" font-weight="400" letter-spacing="0.7">
+      <tspan x="234" dy="0">How AI-Enabled Public Sector Reform Can Improve</tspan>
+      <tspan x="234" dy="52">Transparency, Service Delivery, and Public Trust</tspan>
+    </text>
+  </g>
+
+  <!--
+    THE PASSAGE
+    Dense institutional columns become progressively transparent.
+    A cobalt signal passes through the deliberately open corridor and exits gold.
+  -->
+  <g id="signal" fill="none" stroke-linecap="butt">
+    <path d="M212 2113 H1615" stroke="#1f5bd8" stroke-width="5"/>
+    <path d="M1611 2113 H1718" stroke="#c69a3a" stroke-width="5"/>
+  </g>
+  <circle cx="1718" cy="2113" r="9" fill="#c69a3a"/>
+
+  <g id="institution" fill="#152b3a">
+    <rect x="1163" y="1870" width="450" height="16"/>
+    <rect x="1163" y="2362" width="450" height="18"/>
+
+    <rect x="1186" y="1886" width="26" height="205"/>
+    <rect x="1186" y="2135" width="26" height="227"/>
+
+    <rect x="1240" y="1886" width="26" height="205"/>
+    <rect x="1240" y="2135" width="26" height="227"/>
+
+    <rect x="1294" y="1886" width="26" height="205"/>
+    <rect x="1294" y="2135" width="26" height="227"/>
+
+    <rect x="1348" y="1886" width="26" height="205"/>
+    <rect x="1348" y="2135" width="26" height="227"/>
+
+    <rect x="1402" y="1886" width="26" height="205"/>
+    <rect x="1402" y="2135" width="26" height="227"/>
+
+    <rect x="1456" y="1886" width="26" height="205"/>
+    <rect x="1456" y="2135" width="26" height="227"/>
+
+  </g>
+
+  <g id="transparent-columns" fill="none" stroke="#152b3a" stroke-width="3">
+    <rect x="1510" y="1886" width="26" height="205" opacity="0.60"/>
+    <rect x="1510" y="2135" width="26" height="227" opacity="0.60"/>
+    <rect x="1564" y="1886" width="26" height="205" opacity="0.38"/>
+    <rect x="1564" y="2135" width="26" height="227" opacity="0.38"/>
+  </g>
+
+  <!-- Author name intentionally omitted because none was supplied. -->
+</svg>

@@ -114,7 +114,7 @@ function buildBriefText(signals: CommandSignal[]) {
 
   if (signals.length === 0) {
     return [
-      "DEVONOS DAILY COMMAND BRIEF",
+      "MORROW DAILY COMMAND BRIEF",
       "",
       "Status: Clear",
       "",
@@ -126,7 +126,7 @@ function buildBriefText(signals: CommandSignal[]) {
   }
 
   return [
-    "DEVONOS DAILY COMMAND BRIEF",
+    "MORROW DAILY COMMAND BRIEF",
     "",
     `Generated: ${new Intl.DateTimeFormat("en-NG", {
       weekday: "long",
@@ -168,6 +168,7 @@ export async function GET() {
       birthdays,
       aiDrafts,
       newsItems,
+      approvals,
     ] = await Promise.all([
       prisma.kpiItem.findMany({
         orderBy: {
@@ -207,6 +208,11 @@ export async function GET() {
       prisma.newsItem.findMany({
         orderBy: {
           createdAt: "desc",
+        },
+      }),
+      prisma.approvalRequest.findMany({
+        orderBy: {
+          requestedAt: "desc",
         },
       }),
     ]);
@@ -313,6 +319,72 @@ export async function GET() {
       }
     }
 
+    const waitingApprovals = approvals.filter(
+      (approval) =>
+        approval.status === "Pending" ||
+        approval.status === "Changes Requested"
+    );
+    let routineApprovals = 0;
+
+    for (const approval of waitingApprovals) {
+      const days = getDaysUntil(approval.dueDate);
+
+      if (approval.dueDate && days < 0) {
+        signals.push(
+          signal({
+            module: "Approval Center",
+            title: `Approval overdue: ${approval.title}`,
+            detail: `${approval.title} was due on ${formatDate(approval.dueDate)} and is still ${approval.status}.`,
+            severity:
+              approval.priority === "Critical" ? "critical" : "high",
+            href: "/approvals",
+            action:
+              "Review the source, record the decision, and leave a clear note for the audit trail.",
+            sortScore:
+              severityScore(
+                approval.priority === "Critical" ? "critical" : "high"
+              ) *
+                100 +
+              Math.abs(days),
+          })
+        );
+      } else if (approval.dueDate && days <= 2) {
+        signals.push(
+          signal({
+            module: "Approval Center",
+            title: `Approval due soon: ${approval.title}`,
+            detail: `${approval.title} is due on ${formatDate(approval.dueDate)} and is assigned to ${approval.approver}.`,
+            severity: approval.priority === "Low" ? "medium" : "high",
+            href: "/approvals",
+            action:
+              "Open the Approval Center and record the decision before the deadline.",
+            sortScore:
+              severityScore(approval.priority === "Low" ? "medium" : "high") *
+                100 +
+              days,
+          })
+        );
+      } else {
+        routineApprovals += 1;
+      }
+    }
+
+    if (routineApprovals > 0) {
+      signals.push(
+        signal({
+          module: "Approval Center",
+          title: `${routineApprovals} approval request${routineApprovals === 1 ? "" : "s"} waiting`,
+          detail:
+            "These decisions are not yet urgent, but clearing them will keep work moving.",
+          severity: "medium",
+          href: "/approvals",
+          action:
+            "Review the queue, approve what is ready, and request specific changes where needed.",
+          sortScore: severityScore("medium") * 100 + 14,
+        })
+      );
+    }
+
     for (const event of events) {
       const days = getDaysUntil(event.date);
 
@@ -354,22 +426,30 @@ export async function GET() {
     for (const draft of socialDrafts) {
       const days = getDaysUntil(draft.scheduledDate);
 
-      if (draft.status === "Review" || draft.status === "Approved") {
+      if (
+        draft.scheduledDate &&
+        days < 0 &&
+        draft.status !== "Posted" &&
+        draft.status !== "Archived"
+      ) {
         signals.push(
           signal({
             module: "Social Studio",
-            title: `Social draft ready: ${draft.title}`,
-            detail: `${draft.title} is marked as ${draft.status} for ${draft.platform}.`,
-            severity: draft.status === "Approved" ? "medium" : "high",
+            title: `Scheduled post missed: ${draft.title}`,
+            detail: `${draft.title} was scheduled for ${formatDate(draft.scheduledDate)} but is still marked ${draft.status}.`,
+            severity: "critical",
             href: "/social",
             action:
-              "Review the caption and decide whether it should be scheduled, posted, or revised.",
-            sortScore: severityScore(draft.status === "Approved" ? "medium" : "high") * 100 + 10,
+              "Reschedule, publish, or archive this draft so the content calendar is accurate.",
+            sortScore: severityScore("critical") * 100 + Math.abs(days),
           })
         );
-      }
-
-      if (draft.scheduledDate && days >= 0 && days <= 2 && draft.status !== "Posted") {
+      } else if (
+        draft.scheduledDate &&
+        days >= 0 &&
+        days <= 2 &&
+        draft.status !== "Posted"
+      ) {
         signals.push(
           signal({
             module: "Social Studio",
@@ -382,11 +462,34 @@ export async function GET() {
             sortScore: severityScore("high") * 100 + days,
           })
         );
+      } else if (draft.status === "Review" || draft.status === "Approved") {
+        signals.push(
+          signal({
+            module: "Social Studio",
+            title: `Social draft ready: ${draft.title}`,
+            detail: `${draft.title} is marked as ${draft.status} for ${draft.platform}.`,
+            severity: draft.status === "Approved" ? "medium" : "high",
+            href: "/social",
+            action:
+              "Review the caption and decide whether it should be scheduled, posted, or revised.",
+            sortScore:
+              severityScore(
+                draft.status === "Approved" ? "medium" : "high"
+              ) *
+                100 +
+              10,
+          })
+        );
       }
     }
 
     for (const newsItem of newsItems) {
-      if (newsItem.relevance === "High") {
+      const newsDate = newsItem.publishedAt ?? newsItem.createdAt;
+      const isActionable =
+        (newsItem.status === "New" || newsItem.status === "Shortlisted") &&
+        newsDate.getTime() >= Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+      if (newsItem.relevance === "High" && isActionable) {
         signals.push(
           signal({
             module: "News Intelligence",
@@ -479,6 +582,7 @@ export async function GET() {
         birthdays: birthdays.length,
         aiDrafts: aiDrafts.length,
         newsItems: newsItems.length,
+        approvals: waitingApprovals.length,
         signals: sortedSignals.length,
         critical: criticalSignals.length,
         high: highSignals.length,
@@ -495,7 +599,7 @@ export async function GET() {
     return NextResponse.json(
       {
         ok: false,
-        message: "DevonOS Autopilot could not generate the command brief.",
+        message: "Morrow Autopilot could not generate the command brief.",
       },
       { status: 500 }
     );

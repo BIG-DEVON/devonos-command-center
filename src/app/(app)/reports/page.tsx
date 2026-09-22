@@ -7,9 +7,9 @@ export default function ReportsPage() {
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <section className="mx-auto max-w-[1500px]">
         <ModuleHeader
-          eyebrow="Reports"
-          title="Turn activity into a clear readout."
-          description="Bring the state of projects, KPIs, content, events, and deadlines together for fast, confident reporting."
+          eyebrow="Executive intelligence"
+          title="Know what is true. Decide what happens next."
+          description="A defensible operating picture across projects, KPIs, content, assets, people, events, intelligence, and approvals—with every conclusion linked back to evidence."
           icon={BarChart3}
         />
         <ReportsCommandClient />

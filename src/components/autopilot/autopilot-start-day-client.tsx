@@ -52,9 +52,10 @@ export function AutopilotStartDayClient() {
       }
 
       setResult(data);
+      window.dispatchEvent(new Event("devonos:notifications-changed"));
     } catch (error) {
       console.error("Start My Day failed:", error);
-      setErrorMessage("DevonOS could not complete Start My Day.");
+      setErrorMessage("Morrow could not complete Start My Day.");
     } finally {
       setWorking(false);
     }
@@ -165,7 +166,7 @@ export function AutopilotStartDayClient() {
             </div>
           ) : (
             <p className="text-sm font-semibold leading-7 text-white/58">
-              Click Start My Day and DevonOS will prepare the work queue and
+              Click Start My Day and Morrow will prepare the work queue and
               daily mission plan for you.
             </p>
           )}

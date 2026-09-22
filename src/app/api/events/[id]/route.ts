@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { parseGlobalEventInput } from "@/lib/global-event-input";
 
 type RouteContext = {
   params: Promise<{
@@ -10,34 +11,20 @@ type RouteContext = {
 export async function PATCH(request: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
+    const parsed = parseGlobalEventInput(body, { partial: true });
+    if (!parsed.ok) {
+      return NextResponse.json(
+        { ok: false, message: parsed.message },
+        { status: 400 }
+      );
+    }
 
     const event = await prisma.globalEvent.update({
       where: {
         id,
       },
-      data: {
-        title: body.title === undefined ? undefined : String(body.title).trim(),
-        date: body.date === undefined ? undefined : String(body.date),
-        category:
-          body.category === undefined ? undefined : String(body.category),
-        relevance:
-          body.relevance === undefined ? undefined : String(body.relevance),
-        status: body.status === undefined ? undefined : String(body.status),
-        contentAngle:
-          body.contentAngle === undefined
-            ? undefined
-            : String(body.contentAngle).trim(),
-        visualDirection:
-          body.visualDirection === undefined
-            ? undefined
-            : String(body.visualDirection).trim(),
-        captionDraft:
-          body.captionDraft === undefined
-            ? undefined
-            : String(body.captionDraft).trim(),
-        notes: body.notes === undefined ? undefined : String(body.notes).trim(),
-      },
+      data: parsed.data,
     });
 
     return NextResponse.json({

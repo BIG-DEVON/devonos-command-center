@@ -5,12 +5,11 @@ import {
   Briefcase,
   Cake,
   CalendarDays,
-  Command,
+  FileCheck2,
   Gauge,
   Globe2,
   Newspaper,
   Rocket,
-  Search,
   Settings,
   Share2,
   Target,
@@ -36,6 +35,12 @@ export const mainNavigation: NavigationItem[] = [
     href: "/autopilot",
     icon: Rocket,
     description: "Daily assistant actions",
+  },
+  {
+    name: "Approvals",
+    href: "/approvals",
+    icon: FileCheck2,
+    description: "Decisions and audit trail",
   },
   {
     name: "News Intel",
@@ -85,12 +90,6 @@ export const mainNavigation: NavigationItem[] = [
     icon: Bot,
     description: "Generate drafts",
   },
-  {
-    name: "Search",
-    href: "/search",
-    icon: Search,
-    description: "Find anything",
-  },
 ];
 
 export const utilityNavigation: NavigationItem[] = [
@@ -105,12 +104,6 @@ export const utilityNavigation: NavigationItem[] = [
     href: "/projects",
     icon: Briefcase,
     description: "Workstreams",
-  },
-  {
-    name: "Command Menu",
-    href: "/command",
-    icon: Command,
-    description: "Quick launcher",
   },
   {
     name: "Settings",

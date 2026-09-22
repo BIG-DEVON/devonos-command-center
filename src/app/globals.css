@@ -1,4 +1,5 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+@source "..";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -223,7 +224,7 @@
 }
 
 /* -------------------------------------------------------------------------- */
-/* DEVONOS V1 FOUNDATION CLASSES                                              */
+/* MORROW V1 FOUNDATION CLASSES                                              */
 /* -------------------------------------------------------------------------- */
 
 @keyframes devon-orbit {
@@ -427,7 +428,7 @@
 }
 
 /* -------------------------------------------------------------------------- */
-/* DEVONOS VISUAL SYSTEM V2                                                   */
+/* MORROW VISUAL SYSTEM V2                                                   */
 /* -------------------------------------------------------------------------- */
 
 @keyframes devon-v2-aurora {
@@ -702,7 +703,7 @@
 }
 
 /* -------------------------------------------------------------------------- */
-/* DEVONOS TYPOGRAPHY V2                                                      */
+/* MORROW TYPOGRAPHY V2                                                      */
 /* -------------------------------------------------------------------------- */
 
 .devon-v2-shell h1,
@@ -871,7 +872,7 @@
 }
 
 /* -------------------------------------------------------------------------- */
-/* DEVONOS PRODUCT SYSTEM                                                     */
+/* MORROW PRODUCT SYSTEM                                                     */
 /* -------------------------------------------------------------------------- */
 
 html {
@@ -1116,6 +1117,18 @@ select:focus-visible,
   }
 }
 
+@media (min-width: 48rem) {
+  .md\:hidden.devon-icon-button {
+    display: none;
+  }
+}
+
+@media (min-width: 64rem) {
+  .lg\:hidden.devon-icon-button {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1124,5 +1137,513 @@ select:focus-visible,
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* MORROW LIVE PREFERENCES                                                   */
+/* -------------------------------------------------------------------------- */
+
+.devon-settings-input,
+.devon-input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 0.75rem 0.95rem;
+  color: #2a2a30;
+  font-size: 0.875rem;
+  font-weight: 550;
+  outline: none;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.devon-settings-input:focus,
+.devon-input:focus {
+  border-color: rgba(91, 93, 245, 0.3);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(91, 93, 245, 0.09);
+}
+
+.devon-settings-input:disabled,
+.devon-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.devon-range {
+  height: 5px;
+  appearance: none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #5b5df5, #9f94ff);
+  accent-color: #5b5df5;
+}
+
+.devon-range::-webkit-slider-thumb {
+  width: 19px;
+  height: 19px;
+  appearance: none;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: #5b5df5;
+  box-shadow: 0 4px 14px rgba(91, 93, 245, 0.3);
+}
+
+html[data-density="compact"] main {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}
+
+html[data-density="compact"] .devon-module-header {
+  margin-bottom: 1rem;
+  padding: 1.2rem !important;
+}
+
+html[data-density="compact"] .devon-glass,
+html[data-density="compact"] .devon-surface {
+  border-radius: 18px !important;
+}
+
+html[data-motion="reduced"] {
+  scroll-behavior: auto;
+}
+
+html[data-motion="reduced"] *,
+html[data-motion="reduced"] *::before,
+html[data-motion="reduced"] *::after {
+  scroll-behavior: auto !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  background: #101014;
+  color: #f2f2f4;
+}
+
+.dark ::selection {
+  background: rgba(159, 148, 255, 0.34);
+  color: white;
+}
+
+.dark .devon-app {
+  background:
+    radial-gradient(circle at 74% -12%, rgba(109, 93, 252, 0.17), transparent 30rem),
+    linear-gradient(180deg, #131318 0%, #0f0f13 100%);
+}
+
+.dark .devon-app-glow {
+  background:
+    radial-gradient(circle at 30% 5%, rgba(109, 93, 252, 0.08), transparent 30rem),
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.018), transparent);
+}
+
+.dark header.sticky {
+  border-color: rgba(255, 255, 255, 0.07) !important;
+  background: rgba(17, 17, 22, 0.84) !important;
+}
+
+.dark aside {
+  border-color: rgba(255, 255, 255, 0.07) !important;
+  background: rgba(17, 17, 22, 0.74) !important;
+}
+
+.dark aside > div {
+  border-color: rgba(255, 255, 255, 0.07) !important;
+  background: rgba(27, 27, 33, 0.88) !important;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 20px 60px rgba(0, 0, 0, 0.22) !important;
+}
+
+.dark .devon-module-header,
+.dark .devon-glass,
+.dark .devon-v2-glass,
+.dark .devon-surface {
+  border-color: rgba(255, 255, 255, 0.075) !important;
+  background: rgba(29, 29, 35, 0.84) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 18px 54px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dark [role="menu"],
+.dark [role="dialog"] > [class*="bg-[#fbfbfc]"],
+.dark [role="dialog"][class*="bg-[#f6f6f8]"] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(28, 28, 34, 0.97) !important;
+}
+
+.dark .devon-icon-button,
+.dark .devon-secondary-button {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.055);
+  color: #b7b7c1;
+}
+
+.dark .devon-icon-button:hover,
+.dark .devon-secondary-button:hover {
+  border-color: rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.09);
+  color: white;
+}
+
+.dark .devon-settings-input,
+.dark .devon-input {
+  border-color: rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.055);
+  color: #f2f2f4;
+}
+
+.dark .devon-settings-input:focus,
+.dark .devon-input:focus {
+  border-color: rgba(159, 148, 255, 0.38);
+  background: rgba(255, 255, 255, 0.075);
+  box-shadow: 0 0 0 4px rgba(109, 93, 252, 0.15);
+}
+
+.dark [class*="text-[#0B0D12]"],
+.dark [class*="text-[#17171b]"],
+.dark [class*="text-[#18181c]"],
+.dark [class*="text-[#1d1d21]"],
+.dark [class*="text-[#1e1e22]"],
+.dark [class*="text-[#25252a]"],
+.dark [class*="text-[#2a2a2f]"],
+.dark [class*="text-[#2c2c31]"],
+.dark [class*="text-[#2d2d32]"],
+.dark [class*="text-[#303036]"],
+.dark [class*="text-[#34343a]"],
+.dark [class*="text-[#404046]"],
+.dark [class*="text-slate-800"] {
+  color: #f3f3f5 !important;
+}
+
+.dark [class*="text-slate-700"],
+.dark [class*="text-slate-600"],
+.dark [class*="text-slate-500"],
+.dark [class*="text-[#57575f]"],
+.dark [class*="text-[#66666f]"],
+.dark [class*="text-[#797982]"] {
+  color: #b7b7c1 !important;
+}
+
+.dark [class*="text-slate-400"],
+.dark [class*="text-slate-300"],
+.dark [class*="text-[#8d8d96]"],
+.dark [class*="text-[#8f8f98]"],
+.dark [class*="text-[#92929a]"],
+.dark [class*="text-[#95959d]"],
+.dark [class*="text-[#96969e]"],
+.dark [class*="text-[#97979f]"],
+.dark [class*="text-[#9999a1]"],
+.dark [class*="text-[#9a9aa2]"],
+.dark [class*="text-[#9b9ba3]"],
+.dark [class*="text-[#a0a0a8]"],
+.dark [class*="text-[#a1a1a8]"] {
+  color: #858590 !important;
+}
+
+.dark .devon-glass [class*="bg-white"],
+.dark .devon-surface [class*="bg-white"],
+.dark .devon-module-header [class*="bg-white"],
+.dark header.sticky [class*="bg-white"],
+.dark aside [class*="bg-white"] {
+  border-color: rgba(255, 255, 255, 0.075) !important;
+  background-color: rgba(255, 255, 255, 0.055) !important;
+}
+
+.dark [class*="border-slate-950"],
+.dark [class*="border-black"] {
+  border-color: rgba(255, 255, 255, 0.075) !important;
+}
+
+.dark [class*="bg-slate-950/"],
+.dark [class*="bg-black/"] {
+  background-color: rgba(255, 255, 255, 0.045) !important;
+}
+
+.dark [class*="bg-[#EEF2FF]"],
+.dark [class*="bg-[#f1f0ff]"],
+.dark [class*="bg-[#f2f1ff]"] {
+  background-color: rgba(109, 93, 252, 0.15) !important;
+}
+
+.dark .devon-glass-dark [class~="bg-white"],
+.dark .devon-v2-dark-card [class~="bg-white"],
+.dark .devon-dashboard-hero [class~="bg-white"] {
+  border-color: rgba(255, 255, 255, 0.82) !important;
+  background-color: white !important;
+}
+
+.dark .devon-glass-dark [class~="bg-white"][class*="text-[#0B0D12]"],
+.dark .devon-glass-dark [class~="bg-white"][class*="text-[#17171b]"],
+.dark .devon-v2-dark-card [class~="bg-white"][class*="text-[#0B0D12]"],
+.dark .devon-v2-dark-card [class~="bg-white"][class*="text-[#17171b]"],
+.dark .devon-dashboard-hero [class~="bg-white"] {
+  color: #17171b !important;
+}
+
+.dark .devon-text-gradient,
+.dark .devon-v2-text-gradient,
+.dark .devon-v2-shimmer-text {
+  color: #f3f3f5;
+}
+
+/* Morrow motion language */
+.morrow-loader-mark {
+  position: relative;
+  display: inline-flex;
+  width: 88px;
+  height: 88px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(23, 23, 27, 0.07);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.96), transparent 45%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(239, 238, 247, 0.9));
+  box-shadow:
+    0 28px 80px rgba(32, 28, 72, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  isolation: isolate;
+}
+
+.morrow-loader-mark.is-compact {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  box-shadow:
+    0 10px 30px rgba(32, 28, 72, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.morrow-loader-letter {
+  position: relative;
+  z-index: 2;
+  color: #17171b;
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: -0.09em;
+  transform: translateX(-0.04em);
+}
+
+.is-compact .morrow-loader-letter {
+  font-size: 12px;
+}
+
+.morrow-loader-orbit {
+  position: absolute;
+  inset: 8px;
+  z-index: 1;
+  border: 1px solid rgba(109, 93, 252, 0.16);
+  border-radius: 24px;
+  animation: morrow-orbit 2.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.is-compact .morrow-loader-orbit {
+  inset: 4px;
+  border-radius: 9px;
+}
+
+.morrow-loader-orbit span {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #6d5dfc;
+  box-shadow: 0 0 18px rgba(109, 93, 252, 0.65);
+}
+
+.is-compact .morrow-loader-orbit span {
+  width: 4px;
+  height: 4px;
+}
+
+.morrow-loader-orbit span:nth-child(1) {
+  left: -4px;
+  top: 18%;
+}
+
+.morrow-loader-orbit span:nth-child(2) {
+  right: 8%;
+  top: -4px;
+  background: #d8b76a;
+  box-shadow: 0 0 18px rgba(216, 183, 106, 0.6);
+}
+
+.morrow-loader-orbit span:nth-child(3) {
+  bottom: -4px;
+  right: 22%;
+  background: #9f94ff;
+}
+
+.morrow-loader-progress > span {
+  width: 38%;
+  animation: morrow-progress 1.7s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.morrow-skeleton-line {
+  position: relative;
+}
+
+.morrow-skeleton-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.9),
+    transparent
+  );
+  transform: translateX(-120%);
+  animation: morrow-skeleton 1.45s ease-in-out infinite;
+}
+
+@keyframes morrow-orbit {
+  0% {
+    transform: rotate(0deg) scale(0.96);
+  }
+  50% {
+    transform: rotate(180deg) scale(1);
+  }
+  100% {
+    transform: rotate(360deg) scale(0.96);
+  }
+}
+
+@keyframes morrow-progress {
+  0% {
+    transform: translateX(-135%);
+  }
+  100% {
+    transform: translateX(365%);
+  }
+}
+
+@keyframes morrow-skeleton {
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .morrow-loader-orbit,
+  .morrow-loader-progress > span,
+  .morrow-skeleton-line::after {
+    animation-duration: 8s;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* MORROW ENTERPRISE SYSTEM                                                   */
+/* -------------------------------------------------------------------------- */
+
+:root {
+  --radius: 0.75rem;
+  --background: oklch(0.975 0.003 286);
+  --card: oklch(1 0 0);
+  --muted: oklch(0.96 0.003 286);
+  --border: oklch(0.91 0.004 286);
+  --input: oklch(0.91 0.004 286);
+  --ring: oklch(0.63 0.15 274);
+}
+
+body {
+  background: #f5f5f7;
+  color: #1d1d1f;
+}
+
+::selection {
+  background: rgba(0, 113, 227, 0.16);
+}
+
+.devon-app {
+  background: #f5f5f7;
+}
+
+.devon-app-glow {
+  display: none;
+}
+
+.devon-surface,
+.devon-glass,
+.devon-v2-glass {
+  border: 1px solid rgba(0, 0, 0, 0.055);
+  border-radius: 20px !important;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.018),
+    0 10px 32px rgba(0, 0, 0, 0.034);
+  backdrop-filter: blur(18px) saturate(1.08);
+}
+
+.devon-glass-dark,
+.devon-v2-dark-card,
+.devon-dashboard-hero {
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 20px !important;
+  background: #1d1d1f;
+  box-shadow:
+    0 16px 44px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.devon-dashboard-hero::after,
+.devon-card-shine::before,
+.devon-ink-shine::before,
+.devon-v2-glass::before,
+.devon-v2-dark-card::after,
+.devon-v2-orb::before,
+.devon-v2-premium-border::before {
+  display: none !important;
+}
+
+.devon-primary-button,
+.devon-secondary-button,
+.devon-icon-button {
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.025);
+}
+
+.devon-primary-button {
+  border-color: #1d1d1f;
+  background: #1d1d1f;
+}
+
+.devon-primary-button:hover,
+.devon-secondary-button:hover,
+.devon-icon-button:hover {
+  transform: none;
+}
+
+.devon-settings-input,
+.devon-input {
+  min-height: 44px;
+  border-radius: 12px;
+  background: white;
+}
+
+.devon-v2-aurora,
+.devon-v2-float,
+.devon-float,
+.devon-orbit,
+.devon-soft-pulse,
+.devon-premium-border {
+  animation: none !important;
+}
+
+@media (max-width: 47.999rem) {
+  .devon-module-header {
+    border-radius: 18px;
   }
 }

@@ -2,8 +2,8 @@
 
 import type { ElementType } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ArrowUpRight, Check, Layers3 } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 import { mainNavigation, utilityNavigation } from "@/config/navigation";
 
 type NavigationEntry = {
@@ -65,36 +65,43 @@ function NavigationList({
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ displayName }: { displayName: string }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function signOut() {
+    await fetch("/api/auth/session", { method: "DELETE" });
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-[256px] shrink-0 border-r border-black/[0.06] bg-white/70 p-3 backdrop-blur-2xl lg:block">
-      <div className="flex h-full flex-col rounded-[22px] border border-black/[0.06] bg-white/80 shadow-[0_1px_2px_rgba(0,0,0,0.02),0_18px_55px_rgba(0,0,0,0.05)]">
-        <div className="p-4 pb-3">
+    <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 border-r border-black/[0.055] bg-white/88 backdrop-blur-2xl lg:block">
+      <div className="flex h-full flex-col">
+        <div className="px-5 pb-4 pt-5">
           <Link
             href="/dashboard"
-            className="group flex items-center gap-3 rounded-2xl p-1"
-            aria-label="DevonOS dashboard"
+            className="group flex items-center gap-3"
+            aria-label="Morrow dashboard"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-[#17171b] text-sm font-bold tracking-[-0.06em] text-white shadow-[0_8px_22px_rgba(0,0,0,0.18)] transition duration-300 group-hover:scale-[1.03]">
-              DO
+            <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#1d1d1f] text-[13px] font-bold tracking-[-0.06em] text-white shadow-[0_4px_14px_rgba(0,0,0,0.14)]">
+              M
             </span>
             <span className="min-w-0">
               <span className="block text-[15px] font-bold tracking-[-0.035em] text-[#17171b]">
-                DevonOS
+                Morrow
               </span>
-              <span className="mt-0.5 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#9a9aa2]">
-                Command Center
+              <span className="mt-0.5 block text-[10px] font-medium tracking-[0.02em] text-[#8e8e93]">
+                Executive workspace
               </span>
             </span>
           </Link>
         </div>
 
-        <div className="mx-4 h-px bg-black/[0.055]" />
+        <div className="mx-5 h-px bg-black/[0.055]" />
 
         <div className="devon-scrollbar flex-1 overflow-y-auto px-3 py-4">
-          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-[#a1a1a8]">
+          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.13em] text-[#a1a1a8]">
             Workspace
           </p>
           <NavigationList
@@ -102,7 +109,7 @@ export function Sidebar() {
             pathname={pathname}
           />
 
-          <p className="mb-2 mt-6 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-[#a1a1a8]">
+          <p className="mb-2 mt-6 px-3 text-[10px] font-semibold uppercase tracking-[0.13em] text-[#a1a1a8]">
             System
           </p>
           <NavigationList
@@ -111,30 +118,25 @@ export function Sidebar() {
           />
         </div>
 
-        <div className="p-3 pt-0">
-          <Link
-            href="/settings"
-            className="group block rounded-[17px] border border-black/[0.055] bg-[#f6f6f8] p-3 transition hover:border-black/[0.09] hover:bg-white hover:shadow-sm"
+        <div className="border-t border-black/[0.055] p-3">
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            className="group flex w-full items-center gap-3 rounded-[14px] px-3 py-2.5 text-left transition hover:bg-black/[0.035]"
           >
-            <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#6d5dfc] shadow-sm">
-                <Layers3 size={16} />
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e8e8ed] text-[11px] font-bold uppercase text-[#494950]">
+              {displayName.trim().charAt(0) || "M"}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[12px] font-semibold text-[#34343a]">
+                {displayName || "Morrow member"}
               </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-[#34343a]">
-                  Workspace online
-                  <Check size={12} className="text-emerald-500" />
-                </span>
-                <span className="mt-0.5 block text-[11px] text-[#92929a]">
-                  Local database connected
-                </span>
+              <span className="mt-0.5 block text-[10px] text-[#8e8e93]">
+                Sign out
               </span>
-              <ArrowUpRight
-                size={14}
-                className="text-[#b0b0b7] transition group-hover:text-[#6d5dfc]"
-              />
-            </div>
-          </Link>
+            </span>
+            <LogOut size={14} className="text-[#a1a1a8] group-hover:text-[#34343a]" />
+          </button>
         </div>
       </div>
     </aside>

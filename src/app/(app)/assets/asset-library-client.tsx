@@ -113,7 +113,7 @@ const starterAssets: AssetRecord[] = [
     link: "",
     tags: "documentary, tax, JRB, frames",
     notes:
-      "Premium 4K government documentary visuals. White, dark ink, champagne, and blue-violet DevonOS direction.",
+      "Premium 4K government documentary visuals. White, dark ink, champagne, and blue-violet Morrow direction.",
     createdAt: new Date().toISOString(),
   },
 ];
@@ -418,7 +418,7 @@ export function AssetLibraryClient() {
                     project: event.target.value,
                   }))
                 }
-                placeholder="JRB, DevonOS, Presumptive Tax..."
+                placeholder="JRB, Morrow, Presumptive Tax..."
                 className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               />
             </label>

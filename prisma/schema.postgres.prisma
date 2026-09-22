@@ -1,0 +1,463 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma-postgres"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model MorrowUser {
+  id                     String                @id
+  supabaseUserId         String?               @unique
+  email                  String                @unique
+  displayName            String
+  passwordHash           String?
+  phone                  String                @default("")
+  role                   String                @default("MEMBER")
+  status                 String                @default("ACTIVE")
+  failedLoginCount       Int                   @default(0)
+  lockedUntil            DateTime?
+  lastLoginAt            DateTime?
+  onboardingCompletedAt  DateTime?
+  passwordChangedAt      DateTime              @default(now())
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  sessions               MorrowAuthSession[]
+  authChallenges         MorrowAuthChallenge[]
+  reviewedAccessRequests MorrowAccessRequest[] @relation("AccessRequestReviewer")
+}
+
+model MorrowAuthSession {
+  id         String     @id @default(cuid())
+  tokenHash  String     @unique
+  userId     String
+  userAgent  String     @default("")
+  createdAt  DateTime   @default(now())
+  lastSeenAt DateTime   @default(now())
+  expiresAt  DateTime
+  user       MorrowUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+}
+
+model MorrowAccessRequest {
+  id            String      @id @default(cuid())
+  displayName   String
+  email         String
+  phone         String      @default("")
+  organization  String      @default("")
+  reason        String      @default("")
+  requestedRole String      @default("MEMBER")
+  status        String      @default("PENDING")
+  reviewedById  String?
+  reviewedBy    MorrowUser? @relation("AccessRequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt    DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([status, createdAt])
+  @@index([email, status])
+}
+
+model MorrowAuthChallenge {
+  id                String      @id @default(cuid())
+  userId            String?
+  user              MorrowUser? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email             String
+  phone             String      @default("")
+  purpose           String
+  channel           String      @default("email")
+  codeHash          String      @default("")
+  providerReference String      @default("")
+  attemptCount      Int         @default(0)
+  maxAttempts       Int         @default(5)
+  expiresAt         DateTime
+  consumedAt        DateTime?
+  createdAt         DateTime    @default(now())
+
+  @@index([email, purpose, expiresAt])
+  @@index([userId, createdAt])
+}
+
+model HallOfFameMemberRecord {
+  id               String           @id
+  photoNumber      Int              @unique
+  name             String
+  designation      String           @default("")
+  organization     String           @default("")
+  group            String           @default("State Revenue")
+  status           String           @default("verified")
+  photoUrl         String           @default("")
+  photoData        Bytes?
+  photoMimeType    String           @default("")
+  birthdayCategory String           @default("Stakeholder")
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  birthdayProfile  BirthdayProfile?
+
+  @@index([group, photoNumber])
+}
+
+model WorkspaceSettings {
+  id                      String   @id @default(cuid())
+  displayName             String   @default("Big Devon")
+  roleTitle               String   @default("Communications Intelligence Lead")
+  organization            String   @default("Morrow")
+  defaultTone             String   @default("Premium")
+  defaultMode             String   @default("Work")
+  signature               String   @default("Big Devon")
+  brandDirection          String   @default("")
+  designRules             String   @default("")
+  writingRules            String   @default("")
+  postingRules            String   @default("")
+  systemNotes             String   @default("")
+  theme                   String   @default("system")
+  density                 String   @default("comfortable")
+  motion                  String   @default("system")
+  interfaceSounds         Boolean  @default(true)
+  soundVolume             Int      @default(35)
+  inAppNotifications      Boolean  @default(true)
+  browserNotifications    Boolean  @default(false)
+  emailNotifications      Boolean  @default(false)
+  smsNotifications        Boolean  @default(false)
+  notificationEmail       String   @default("")
+  notificationPhone       String   @default("")
+  externalMinimumSeverity String   @default("warning")
+  quietHoursEnabled       Boolean  @default(true)
+  quietHoursStart         String   @default("22:00")
+  quietHoursEnd           String   @default("07:00")
+  dailyBriefTime          String   @default("07:30")
+  timezone                String   @default("Africa/Lagos")
+  weekStartsOn            String   @default("monday")
+  confirmDestructiveTasks Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+model NewsItem {
+  id           String    @id @default(cuid())
+  headline     String
+  source       String    @default("")
+  sourceKey    String    @default("")
+  sourceDomain String    @default("")
+  channel      String    @default("Newspaper")
+  contentType  String    @default("Article")
+  url          String    @default("")
+  fingerprint  String?   @unique
+  author       String    @default("")
+  summary      String    @default("")
+  relevance    String    @default("Medium")
+  topic        String    @default("General")
+  score        Int       @default(0)
+  status       String    @default("New")
+  notes        String    @default("")
+  publishedAt  DateTime?
+  collectedAt  DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model NewsSourceState {
+  key              String    @id
+  name             String
+  homepage         String
+  feedUrl          String
+  kind             String    @default("RSS")
+  enabled          Boolean   @default(true)
+  priority         Int       @default(50)
+  lastCheckedAt    DateTime?
+  lastSuccessfulAt DateTime?
+  lastStatus       String    @default("Ready")
+  lastError        String    @default("")
+  itemsSeen        Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model NewsMonitorRun {
+  id                String    @id @default(cuid())
+  status            String    @default("Running")
+  startedAt         DateTime  @default(now())
+  completedAt       DateTime?
+  sourcesChecked    Int       @default(0)
+  sourcesSucceeded  Int       @default(0)
+  articlesFetched   Int       @default(0)
+  articlesRelevant  Int       @default(0)
+  articlesCreated   Int       @default(0)
+  duplicatesSkipped Int       @default(0)
+  errors            String    @default("[]")
+}
+
+model NewsDigest {
+  id        String   @id @default(cuid())
+  title     String
+  date      String
+  status    String   @default("Draft")
+  content   String
+  itemIds   String   @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NotificationRecord {
+  id         String                 @id @default(cuid())
+  title      String
+  message    String                 @default("")
+  category   String                 @default("System")
+  severity   String                 @default("info")
+  href       String                 @default("")
+  status     String                 @default("Unread")
+  sourceType String                 @default("")
+  sourceId   String                 @default("")
+  dedupeKey  String?                @unique
+  readAt     DateTime?
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+  deliveries NotificationDelivery[]
+
+  @@index([status, createdAt])
+}
+
+model NotificationDelivery {
+  id                String             @id @default(cuid())
+  notificationId    String
+  notification      NotificationRecord @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  channel           String
+  destination       String             @default("")
+  provider          String             @default("")
+  status            String             @default("Queued")
+  providerMessageId String             @default("")
+  attemptCount      Int                @default(0)
+  nextAttemptAt     DateTime?
+  lastAttemptAt     DateTime?
+  sentAt            DateTime?
+  lastError         String             @default("")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@unique([notificationId, channel, destination])
+  @@index([status, nextAttemptAt])
+  @@index([channel, createdAt])
+}
+
+model PushSubscriptionRecord {
+  id          String   @id @default(cuid())
+  endpoint    String   @unique
+  p256dh      String
+  auth        String
+  userAgent   String   @default("")
+  deviceLabel String   @default("Browser device")
+  enabled     Boolean  @default(true)
+  lastSeenAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([enabled, lastSeenAt])
+}
+
+model AutomationSchedule {
+  id          String    @id @default(cuid())
+  key         String    @unique
+  name        String
+  description String    @default("")
+  enabled     Boolean   @default(true)
+  cadence     String    @default("Daily")
+  time        String    @default("07:30")
+  timezone    String    @default("Africa/Lagos")
+  channels    String    @default("[\"in-app\"]")
+  lastRunAt   DateTime?
+  lastStatus  String    @default("Never run")
+  lastSummary String    @default("")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model AutomationRun {
+  id             String    @id @default(cuid())
+  scheduleKey    String
+  trigger        String    @default("Manual")
+  status         String    @default("Running")
+  summary        String    @default("")
+  outputHref     String    @default("")
+  recordsCreated Int       @default(0)
+  error          String    @default("")
+  startedAt      DateTime  @default(now())
+  completedAt    DateTime?
+
+  @@index([scheduleKey, startedAt])
+}
+
+model ApprovalRequest {
+  id           String             @id @default(cuid())
+  title        String
+  module       String             @default("General")
+  sourceId     String             @default("")
+  sourceLabel  String             @default("")
+  sourceHref   String             @default("")
+  requestedBy  String             @default("Big Devon")
+  approver     String             @default("Big Devon")
+  priority     String             @default("Medium")
+  status       String             @default("Pending")
+  dueDate      String             @default("")
+  summary      String             @default("")
+  decisionNote String             @default("")
+  requestedAt  DateTime           @default(now())
+  decidedAt    DateTime?
+  updatedAt    DateTime           @updatedAt
+  activities   ApprovalActivity[]
+
+  @@index([status, dueDate])
+}
+
+model ApprovalActivity {
+  id         String          @id @default(cuid())
+  approvalId String
+  action     String
+  actor      String          @default("Big Devon")
+  detail     String          @default("")
+  createdAt  DateTime        @default(now())
+  approval   ApprovalRequest @relation(fields: [approvalId], references: [id], onDelete: Cascade)
+
+  @@index([approvalId, createdAt])
+}
+
+model KpiItem {
+  id          String   @id @default(cuid())
+  title       String
+  owner       String   @default("")
+  status      String   @default("Not Started")
+  priority    String   @default("Medium")
+  dueDate     String   @default("")
+  description String   @default("")
+  outcome     String   @default("")
+  notes       String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SocialDraft {
+  id              String   @id @default(cuid())
+  title           String
+  campaign        String   @default("")
+  platform        String   @default("Instagram")
+  status          String   @default("Draft")
+  scheduledDate   String   @default("")
+  caption         String   @default("")
+  visualDirection String   @default("")
+  hashtags        String   @default("")
+  notes           String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AssetRecord {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   @default("Document")
+  project   String   @default("")
+  status    String   @default("Raw")
+  priority  String   @default("Medium")
+  link      String   @default("")
+  tags      String   @default("")
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GlobalEvent {
+  id              String   @id @default(cuid())
+  title           String
+  date            String   @default("")
+  category        String   @default("Global Observance")
+  relevance       String   @default("Medium")
+  status          String   @default("Idea")
+  contentAngle    String   @default("")
+  visualDirection String   @default("")
+  captionDraft    String   @default("")
+  notes           String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model BirthdayProfile {
+  id            String                  @id @default(cuid())
+  name          String
+  role          String                  @default("")
+  category      String                  @default("")
+  month         Int                     @default(1)
+  day           Int                     @default(1)
+  photoUrl      String                  @default("")
+  hallMemberId  String?                 @unique
+  notes         String                  @default("")
+  preferredTone String                  @default("Warm")
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  hallMember    HallOfFameMemberRecord? @relation(fields: [hallMemberId], references: [id], onDelete: SetNull)
+}
+
+model AiDraft {
+  id          String   @id @default(cuid())
+  title       String
+  category    String   @default("Caption")
+  tone        String   @default("Premium")
+  status      String   @default("Draft")
+  instruction String   @default("")
+  sourceText  String   @default("")
+  output      String   @default("")
+  notes       String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ProjectRecord {
+  id           String   @id @default(cuid())
+  name         String
+  owner        String   @default("")
+  category     String   @default("")
+  status       String   @default("Planning")
+  priority     String   @default("High")
+  startDate    String   @default("")
+  dueDate      String   @default("")
+  objective    String   @default("")
+  deliverables String   @default("")
+  notes        String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model AutopilotTask {
+  id             String   @id @default(cuid())
+  title          String
+  module         String   @default("")
+  severity       String   @default("medium")
+  status         String   @default("Open")
+  dueDate        String   @default("")
+  detail         String   @default("")
+  action         String   @default("")
+  href           String   @default("")
+  sourceSignalId String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ExecutiveReportSnapshot {
+  id                  String    @id @default(cuid())
+  title               String
+  range               String    @default("30d")
+  periodStart         DateTime?
+  periodEnd           DateTime
+  score               Int
+  signal              String    @default("Steady")
+  summary             String
+  metricsJson         String
+  dimensionsJson      String
+  evidenceJson        String
+  recommendationsJson String
+  createdBy           String    @default("Morrow Owner")
+  sourceVersion       Int       @default(1)
+  createdAt           DateTime  @default(now())
+
+  @@index([createdAt])
+}

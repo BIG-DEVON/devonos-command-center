@@ -1,102 +1,93 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import type { ElementType } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowUpRight,
+  ArrowRight,
+  BarChart3,
+  Bell,
   Bot,
   Briefcase,
   CalendarDays,
-  CheckCircle2,
-  Copy,
+  Check,
+  Command,
   Crown,
-  Database,
+  FileCheck2,
   Folder,
+  Gauge,
   Newspaper,
-  RefreshCcw,
+  Orbit,
   Search,
   Share2,
+  Sparkles,
   Target,
-  Users,
+  UserRound,
+  WandSparkles,
+  Zap,
 } from "lucide-react";
-import {
-  loadWorkspaceCollections,
-  type WorkspaceCollections,
-} from "@/lib/client-workspace";
+import { MorrowInlineLoader } from "@/components/ui/morrow-loading";
+import type {
+  SearchKind,
+  UniversalSearchResponse,
+  UniversalSearchResult,
+} from "@/lib/universal-search";
 
-type ModuleFilter =
-  | "All"
-  | "KPI"
-  | "Social"
-  | "Assets"
-  | "Events"
-  | "Birthdays"
-  | "Projects"
-  | "News"
-  | "AI";
-
-type SearchResult = {
-  id: string;
-  module: Exclude<ModuleFilter, "All">;
-  title: string;
-  subtitle: string;
-  body: string;
-  status: string;
-  href: string;
-  createdAt: string;
-  rawText: string;
-};
-
-const moduleFilters: ModuleFilter[] = [
-  "All",
+const preferredKinds: SearchKind[] = [
+  "People",
+  "Workspace",
+  "Projects",
   "KPI",
   "Social",
   "Assets",
   "Events",
   "Birthdays",
-  "Projects",
   "News",
+  "Approvals",
+  "Reports",
   "AI",
+  "Autopilot",
+  "Automations",
+  "Notifications",
 ];
 
-function stringValue(value: unknown) {
-  if (typeof value === "string") return value;
-  if (typeof value === "number") return String(value);
-  if (typeof value === "boolean") return String(value);
-  return "";
-}
+const kindIcons: Record<SearchKind, ElementType> = {
+  People: UserRound,
+  Workspace: Gauge,
+  Projects: Briefcase,
+  KPI: Target,
+  Social: Share2,
+  Assets: Folder,
+  Events: CalendarDays,
+  Birthdays: CalendarDays,
+  News: Newspaper,
+  Approvals: FileCheck2,
+  Reports: BarChart3,
+  AI: Bot,
+  Autopilot: Zap,
+  Automations: Orbit,
+  Notifications: Bell,
+};
 
-function pickString(item: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = stringValue(item[key]);
-    if (value.trim()) return value.trim();
+function kindAccent(kind: SearchKind) {
+  if (kind === "People") return "bg-[#f5eddb] text-[#806126]";
+  if (kind === "News") return "bg-cyan-50 text-cyan-700";
+  if (kind === "Approvals") return "bg-amber-50 text-amber-700";
+  if (kind === "Reports") return "bg-indigo-50 text-indigo-700";
+  if (kind === "Social") return "bg-pink-50 text-pink-600";
+  if (kind === "Projects") return "bg-violet-50 text-violet-600";
+  if (kind === "Autopilot" || kind === "Automations") {
+    return "bg-[#17171b] text-white";
   }
-
-  return "";
+  return "bg-[#efefff] text-[#6254e8]";
 }
 
-function recordText(item: Record<string, unknown>) {
-  return Object.values(item)
-    .map((value) => {
-      if (typeof value === "string") return value;
-      if (typeof value === "number") return String(value);
-      if (typeof value === "boolean") return String(value);
-      return "";
-    })
-    .join(" ")
-    .trim();
-}
-
-function formatDate(dateString: string) {
-  if (!dateString) return "No date";
-
-  const date = new Date(dateString);
-
-  if (Number.isNaN(date.getTime())) {
-    return "No date";
-  }
-
+function formatResultDate(value: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat("en-NG", {
     day: "numeric",
     month: "short",
@@ -104,643 +95,514 @@ function formatDate(dateString: string) {
   }).format(date);
 }
 
-function moduleIcon(module: SearchResult["module"]) {
-  if (module === "KPI") return Target;
-  if (module === "Social") return Share2;
-  if (module === "Assets") return Folder;
-  if (module === "Events") return CalendarDays;
-  if (module === "Birthdays") return Users;
-  if (module === "Projects") return Briefcase;
-  if (module === "News") return Newspaper;
-  return Bot;
-}
-
-function moduleClass(module: SearchResult["module"]) {
-  if (module === "KPI") {
-    return "border-[#5B5DF5]/15 bg-[#EEF2FF] text-[#5B5DF5]";
-  }
-
-  if (module === "Social") {
-    return "border-pink-100 bg-pink-50 text-pink-600";
-  }
-
-  if (module === "Assets") {
-    return "border-[#D8B76A]/25 bg-[#FFF8E1] text-[#8A6B22]";
-  }
-
-  if (module === "Events") {
-    return "border-blue-100 bg-blue-50 text-blue-600";
-  }
-
-  if (module === "Birthdays") {
-    return "border-red-100 bg-red-50 text-red-600";
-  }
-
-  if (module === "Projects") {
-    return "border-violet-100 bg-violet-50 text-violet-600";
-  }
-
-  if (module === "News") {
-    return "border-cyan-100 bg-cyan-50 text-cyan-700";
-  }
-
-  return "border-slate-200 bg-slate-100 text-slate-600";
-}
-
-function filterClass(filter: ModuleFilter, active: ModuleFilter) {
-  if (filter === active) {
-    return "border-[#0B0D12] bg-[#0B0D12] text-white shadow-[0_16px_45px_rgba(15,23,42,0.18)]";
-  }
-
-  return "border-slate-950/[0.08] bg-white/72 text-slate-500 hover:bg-white hover:text-[#0B0D12]";
-}
-
-function buildSearchIndex(collections: WorkspaceCollections): SearchResult[] {
-  const kpis = collections.kpis.map((item, index) => {
-    const title =
-      pickString(item, ["title", "name", "objective"]) || `KPI Item ${index + 1}`;
-
-    const status = pickString(item, ["status"]) || "No status";
-    const priority = pickString(item, ["priority"]);
-    const owner = pickString(item, ["owner", "assignee"]);
-    const description = pickString(item, [
-      "description",
-      "notes",
-      "outcome",
-      "details",
-    ]);
-
-    return {
-      id: `kpi-${pickString(item, ["id"]) || index}`,
-      module: "KPI" as const,
-      title,
-      subtitle: [status, priority, owner].filter(Boolean).join(" · "),
-      body: description || recordText(item),
-      status,
-      href: "/kpi",
-      createdAt: pickString(item, ["createdAt", "date", "dueDate"]),
-      rawText: recordText(item),
-    };
-  });
-
-  const social = collections.social.map((item, index) => {
-    const title =
-      pickString(item, ["title", "campaign"]) || `Social Draft ${index + 1}`;
-
-    const status = pickString(item, ["status"]) || "No status";
-    const platform = pickString(item, ["platform"]);
-    const campaign = pickString(item, ["campaign"]);
-    const caption = pickString(item, ["caption", "visualDirection", "notes"]);
-
-    return {
-      id: `social-${pickString(item, ["id"]) || index}`,
-      module: "Social" as const,
-      title,
-      subtitle: [platform, status, campaign].filter(Boolean).join(" · "),
-      body: caption || recordText(item),
-      status,
-      href: "/social",
-      createdAt: pickString(item, ["createdAt", "scheduledDate"]),
-      rawText: recordText(item),
-    };
-  });
-
-  const assets = collections.assets.map((item, index) => {
-    const title =
-      pickString(item, ["name", "title"]) || `Asset Record ${index + 1}`;
-
-    const status = pickString(item, ["status"]) || "No status";
-    const type = pickString(item, ["type"]);
-    const project = pickString(item, ["project"]);
-    const notes = pickString(item, ["notes", "tags", "link"]);
-
-    return {
-      id: `asset-${pickString(item, ["id"]) || index}`,
-      module: "Assets" as const,
-      title,
-      subtitle: [type, status, project].filter(Boolean).join(" · "),
-      body: notes || recordText(item),
-      status,
-      href: "/assets",
-      createdAt: pickString(item, ["createdAt"]),
-      rawText: recordText(item),
-    };
-  });
-
-  const events = collections.events.map((item, index) => {
-    const title =
-      pickString(item, ["title", "name"]) || `Event ${index + 1}`;
-
-    const status = pickString(item, ["status"]) || "No status";
-    const category = pickString(item, ["category"]);
-    const date = pickString(item, ["date"]);
-    const body = pickString(item, [
-      "contentAngle",
-      "visualDirection",
-      "captionDraft",
-      "notes",
-    ]);
-
-    return {
-      id: `event-${pickString(item, ["id"]) || index}`,
-      module: "Events" as const,
-      title,
-      subtitle: [category, status, date].filter(Boolean).join(" · "),
-      body: body || recordText(item),
-      status,
-      href: "/events",
-      createdAt: pickString(item, ["createdAt", "date"]),
-      rawText: recordText(item),
-    };
-  });
-
-  const birthdays = collections.birthdays.map((item, index) => {
-    const title =
-      pickString(item, ["name", "title"]) || `Birthday Profile ${index + 1}`;
-
-    const role = pickString(item, ["role"]);
-    const category = pickString(item, ["category"]);
-    const tone = pickString(item, ["preferredTone"]);
-    const notes = pickString(item, ["notes"]);
-
-    return {
-      id: `birthday-${pickString(item, ["id"]) || index}`,
-      module: "Birthdays" as const,
-      title,
-      subtitle: [role, category, tone].filter(Boolean).join(" · "),
-      body: notes || recordText(item),
-      status: tone || "Saved",
-      href: "/birthdays",
-      createdAt: pickString(item, ["createdAt"]),
-      rawText: recordText(item),
-    };
-  });
-
-  const ai = collections.ai.map((item, index) => {
-    const title =
-      pickString(item, ["title", "name"]) || `AI Draft ${index + 1}`;
-
-    const status = pickString(item, ["status"]) || "No status";
-    const category = pickString(item, ["category"]);
-    const tone = pickString(item, ["tone"]);
-    const body = pickString(item, [
-      "output",
-      "instruction",
-      "sourceText",
-      "notes",
-    ]);
-
-    return {
-      id: `ai-${pickString(item, ["id"]) || index}`,
-      module: "AI" as const,
-      title,
-      subtitle: [category, tone, status].filter(Boolean).join(" · "),
-      body: body || recordText(item),
-      status,
-      href: "/ai",
-      createdAt: pickString(item, ["createdAt"]),
-      rawText: recordText(item),
-    };
-  });
-
-  const projects = collections.projects.map((item, index) => {
-    const title =
-      pickString(item, ["name", "title"]) || `Project ${index + 1}`;
-    const status = pickString(item, ["status"]) || "No status";
-    const priority = pickString(item, ["priority"]);
-    const owner = pickString(item, ["owner"]);
-    const body = pickString(item, [
-      "objective",
-      "deliverables",
-      "notes",
-      "category",
-    ]);
-
-    return {
-      id: `project-${pickString(item, ["id"]) || index}`,
-      module: "Projects" as const,
-      title,
-      subtitle: [status, priority, owner].filter(Boolean).join(" · "),
-      body: body || recordText(item),
-      status,
-      href: "/projects",
-      createdAt: pickString(item, ["createdAt", "dueDate"]),
-      rawText: recordText(item),
-    };
-  });
-
-  const news = collections.news.map((item, index) => {
-    const title =
-      pickString(item, ["headline", "title"]) || `News item ${index + 1}`;
-    const relevance = pickString(item, ["relevance"]) || "Saved";
-    const source = pickString(item, ["source"]);
-    const body = pickString(item, ["summary", "notes", "url"]);
-
-    return {
-      id: `news-${pickString(item, ["id"]) || index}`,
-      module: "News" as const,
-      title,
-      subtitle: [source, relevance].filter(Boolean).join(" · "),
-      body: body || recordText(item),
-      status: relevance,
-      href: "/news/collector",
-      createdAt: pickString(item, ["createdAt"]),
-      rawText: recordText(item),
-    };
-  });
-
-  return [
-    ...kpis,
-    ...projects,
-    ...social,
-    ...assets,
-    ...events,
-    ...birthdays,
-    ...news,
-    ...ai,
-  ];
-}
-
-function buildExportText(result: SearchResult | null) {
-  if (!result) return "Select a search result to preview it.";
-
-  return [
-    result.title,
-    "",
-    `Module: ${result.module}`,
-    `Status: ${result.status || "No status"}`,
-    `Location: ${result.href}`,
-    result.subtitle ? `Details: ${result.subtitle}` : "",
-    result.createdAt ? `Date: ${formatDate(result.createdAt)}` : "",
-    "",
-    "Content:",
-    result.body || "No detailed content available.",
-  ]
-    .filter(Boolean)
-    .join("\n");
-}
-
 export function SearchCommandClient() {
-  const [index, setIndex] = useState<SearchResult[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
-  const [moduleFilter, setModuleFilter] = useState<ModuleFilter>("All");
+  const [kind, setKind] = useState<"All" | SearchKind>("All");
+  const [response, setResponse] = useState<UniversalSearchResponse | null>(
+    null
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState("");
-
-  async function refreshIndex() {
-    try {
-      const collections = await loadWorkspaceCollections();
-      const nextIndex = buildSearchIndex(collections);
-      setIndex(nextIndex);
-      setSelectedId(nextIndex[0]?.id ?? null);
-
-      setLastRefresh(
-        new Intl.DateTimeFormat("en-NG", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        }).format(new Date())
-      );
-    } catch (error) {
-      console.error("Failed to refresh search index:", error);
-      setLastRefresh("Refresh failed");
-    }
-  }
 
   useEffect(() => {
-    void refreshIndex();
+    const requestedQuery = new URLSearchParams(window.location.search)
+      .get("q")
+      ?.trim();
+    if (requestedQuery) setQuery(requestedQuery);
   }, []);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError("");
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const searchParams = new URLSearchParams({
+          q: query,
+          limit: "120",
+        });
+        const searchResponse = await fetch(`/api/search?${searchParams}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const data = (await searchResponse.json()) as UniversalSearchResponse;
+        if (!searchResponse.ok || !data.ok) {
+          throw new Error(data.message || "Search could not be refreshed.");
+        }
+        setResponse(data);
+      } catch (searchError) {
+        if (searchError instanceof DOMException && searchError.name === "AbortError") {
+          return;
+        }
+        console.error("Universal search failed:", searchError);
+        setError("Morrow could not refresh the index. Try again in a moment.");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }, query ? 110 : 0);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [query]);
+
   const filteredResults = useMemo(() => {
-    const search = query.trim().toLowerCase();
-
-    return index.filter((result) => {
-      const matchesModule =
-        moduleFilter === "All" || result.module === moduleFilter;
-
-      const matchesQuery =
-        !search ||
-        [
-          result.title,
-          result.subtitle,
-          result.body,
-          result.status,
-          result.module,
-          result.rawText,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(search);
-
-      return matchesModule && matchesQuery;
-    });
-  }, [index, moduleFilter, query]);
+    const results = response?.results ?? [];
+    if (kind === "All") return results;
+    return results.filter((result) => result.kind === kind);
+  }, [kind, response?.results]);
 
   const selectedResult = useMemo(() => {
-    if (!selectedId) return filteredResults[0] ?? null;
-
     return (
-      index.find((result) => result.id === selectedId) ??
+      filteredResults.find((result) => result.id === selectedId) ??
       filteredResults[0] ??
       null
     );
-  }, [filteredResults, index, selectedId]);
+  }, [filteredResults, selectedId]);
 
-  const exportText = buildExportText(selectedResult);
+  const availableKinds = useMemo(() => {
+    return preferredKinds.filter((item) => (response?.counts[item] ?? 0) > 0);
+  }, [response?.counts]);
 
-  const moduleCounts = useMemo(() => {
-    return {
-      KPI: index.filter((item) => item.module === "KPI").length,
-      Social: index.filter((item) => item.module === "Social").length,
-      Assets: index.filter((item) => item.module === "Assets").length,
-      Events: index.filter((item) => item.module === "Events").length,
-      Birthdays: index.filter((item) => item.module === "Birthdays").length,
-      AI: index.filter((item) => item.module === "AI").length,
-    };
-  }, [index]);
-
-  async function copyResult() {
-    await navigator.clipboard.writeText(exportText);
+  async function copyContext() {
+    if (!selectedResult) return;
+    await navigator.clipboard.writeText(
+      [
+        selectedResult.title,
+        selectedResult.subtitle,
+        selectedResult.body,
+        `Location: ${selectedResult.href}`,
+      ]
+        .filter(Boolean)
+        .join("\n\n")
+    );
     setCopied(true);
-
-    window.setTimeout(() => {
-      setCopied(false);
-    }, 1600);
+    window.setTimeout(() => setCopied(false), 1600);
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-      <div className="space-y-5">
-        <div className="devon-glass-dark devon-ink-shine rounded-[2.25rem] p-6 text-white">
-          <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#0B0D12] shadow-[0_22px_70px_rgba(255,255,255,0.18)]">
-              <Crown size={21} />
+    <div className="space-y-5" data-testid="universal-search">
+      <section className="relative overflow-hidden rounded-[2.7rem] bg-[#0b0b10] text-white shadow-[0_35px_110px_rgba(15,15,22,0.22)]">
+        <div className="pointer-events-none absolute inset-0 [background:radial-gradient(circle_at_78%_10%,rgba(109,93,252,0.35),transparent_32%),radial-gradient(circle_at_10%_110%,rgba(216,183,106,0.18),transparent_40%)]" />
+        <div className="relative grid gap-10 p-7 md:p-10 lg:grid-cols-[1fr_0.72fr] lg:p-12">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-[10px] font-extrabold uppercase tracking-[0.23em] text-white/55">
+              <WandSparkles size={14} className="text-[#d8b76a]" />
+              Universal context engine
             </div>
-
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/34">
-                Universal Index
-              </p>
-              <h2 className="mt-1 text-xl font-semibold tracking-tight">
-                {index.length} records indexed
-              </h2>
-            </div>
-          </div>
-
-          <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.055] p-4">
-            <div className="relative">
-              <Search
-                size={17}
-                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/38"
-              />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search anything in DevonOS..."
-                className="w-full rounded-2xl border border-white/10 bg-black/25 py-3.5 pl-11 pr-4 text-sm font-medium text-white outline-none transition placeholder:text-white/28 focus:border-white/25 focus:bg-black/35"
-              />
-            </div>
-
-            <p className="mt-4 text-xs leading-5 text-white/42">
-              Last refreshed: {lastRefresh || "Not refreshed yet"}
+            <h2 className="mt-7 max-w-4xl text-5xl font-semibold leading-[0.96] tracking-[-0.06em] md:text-7xl">
+              Ask for anything.
+            </h2>
+            <p className="mt-5 max-w-2xl text-base font-medium leading-8 text-white/48">
+              Names, portraits, projects, decisions, drafts, dates, signals,
+              automations, and every workspace—ranked in one quiet place.
             </p>
           </div>
 
-          <button
-            onClick={refreshIndex}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-[#0B0D12] shadow-[0_18px_55px_rgba(255,255,255,0.14)] transition duration-300 hover:-translate-y-0.5"
-          >
-            <RefreshCcw size={16} />
-            Refresh Search Index
-          </button>
-        </div>
-
-        <div className="devon-glass rounded-[2.25rem] p-6">
-          <div className="mb-5 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#5B5DF5]">
-              <Database size={19} />
-            </div>
-
-            <div>
-              <h2 className="text-xl font-semibold tracking-tight text-[#0B0D12]">
-                Module Filters
-              </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Narrow search to one workspace.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {moduleFilters.map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setModuleFilter(filter)}
-                className={`rounded-full border px-4 py-2 text-xs font-semibold transition duration-300 ${filterClass(
-                  filter,
-                  moduleFilter
-                )}`}
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-2">
-          <MetricCard
-            title="KPI"
-            value={moduleCounts.KPI}
-            sub="Execution records"
-            icon={Target}
-          />
-          <MetricCard
-            title="Social"
-            value={moduleCounts.Social}
-            sub="Post drafts"
-            icon={Share2}
-          />
-          <MetricCard
-            title="Assets"
-            value={moduleCounts.Assets}
-            sub="Creative files"
-            icon={Folder}
-          />
-          <MetricCard
-            title="AI"
-            value={moduleCounts.AI}
-            sub="Generated drafts"
-            icon={Bot}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-5">
-        <div className="devon-glass rounded-[2.25rem] p-6">
-          <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-            <div>
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-950/[0.08] bg-white/70 px-4 py-2 text-xs font-semibold text-slate-600 shadow-[0_12px_40px_rgba(15,23,42,0.045)]">
-                <Search size={14} className="text-[#5B5DF5]" />
-                Search Results
+          <div className="flex items-end">
+            <div className="w-full rounded-[2rem] border border-white/10 bg-white/[0.07] p-3 backdrop-blur-2xl">
+              <div className="relative">
+                <Search
+                  size={20}
+                  className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-white/35"
+                />
+                <input
+                  ref={inputRef}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Try “Zacch”, “pending approval”, or “Lagos”…"
+                  className="h-16 w-full rounded-[1.35rem] border border-white/10 bg-black/30 pl-14 pr-16 text-base font-semibold text-white outline-none transition placeholder:text-white/28 focus:border-white/24 focus:bg-black/42 focus:ring-4 focus:ring-white/[0.04]"
+                  aria-label="Search everything in Morrow"
+                />
+                <kbd className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-lg border border-white/10 bg-white/[0.06] px-2 py-1 text-[10px] font-bold text-white/38">
+                  <Command size={10} /> K
+                </kbd>
               </div>
-
-              <h2 className="text-2xl font-semibold tracking-tight text-[#0B0D12]">
-                {filteredResults.length} result
-                {filteredResults.length === 1 ? "" : "s"} found
-              </h2>
-
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                Search finds matching records stored across your DevonOS modules.
-              </p>
+              <div className="flex items-center justify-between gap-3 px-2 pb-1 pt-3">
+                {loading ? (
+                  <MorrowInlineLoader label="Indexing the workspace" />
+                ) : (
+                  <p className="text-[11px] font-semibold text-white/35">
+                    {response?.indexed ?? 0} searchable objects ·{" "}
+                    {response?.total ?? 0} current matches
+                  </p>
+                )}
+                <span className="hidden text-[10px] font-bold uppercase tracking-[0.16em] text-[#d8b76a]/70 sm:block">
+                  Ranked, not dumped
+                </span>
+              </div>
             </div>
           </div>
+        </div>
+      </section>
 
-          {filteredResults.length === 0 ? (
-            <div className="rounded-[1.6rem] border border-dashed border-slate-950/[0.12] bg-white/55 p-8 text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#5B5DF5]">
-                <Search size={20} />
-              </div>
-              <h3 className="text-base font-semibold text-[#0B0D12]">
-                No matching records
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Try another keyword or refresh the search index.
+      <section className="devon-v2-glass rounded-[2.3rem] p-3 md:p-4">
+        <div className="flex flex-wrap gap-2">
+          <FilterButton
+            active={kind === "All"}
+            label="Everything"
+            count={response?.total ?? 0}
+            onClick={() => setKind("All")}
+          />
+          {availableKinds.map((item) => (
+            <FilterButton
+              key={item}
+              active={kind === item}
+              label={item}
+              count={response?.counts[item] ?? 0}
+              onClick={() => setKind(item)}
+            />
+          ))}
+        </div>
+      </section>
+
+      {error ? (
+        <div
+          role="alert"
+          className="rounded-[1.6rem] border border-red-100 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700"
+        >
+          {error}
+        </div>
+      ) : null}
+
+      <section className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+        <div className="devon-v2-glass rounded-[2.4rem] p-5 md:p-6">
+          <div className="flex items-end justify-between gap-4 border-b border-black/[0.06] pb-5">
+            <div>
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#6d5dfc]">
+                Best matches
               </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredResults.map((result) => {
-                const Icon = moduleIcon(result.module);
-                const isSelected = selectedResult?.id === result.id;
-
-                return (
-                  <div
-                    key={result.id}
-                    className={`rounded-[1.65rem] border p-4 shadow-[0_14px_45px_rgba(15,23,42,0.04)] transition duration-300 ${
-                      isSelected
-                        ? "border-[#5B5DF5]/25 bg-[#EEF2FF]/70"
-                        : "border-slate-950/[0.08] bg-white/66 hover:bg-white"
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#17171b]">
+                {loading
+                  ? "Looking everywhere…"
+                  : `${filteredResults.length} result${
+                      filteredResults.length === 1 ? "" : "s"
                     }`}
-                  >
-                    <div className="mb-4 flex justify-between gap-4">
-                      <button
-                        onClick={() => setSelectedId(result.id)}
-                        className="flex flex-1 gap-3 text-left"
-                      >
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950/[0.045] text-slate-700">
-                          <Icon size={18} />
-                        </div>
-
-                        <div>
-                          <h3 className="text-base font-semibold text-[#0B0D12]">
-                            {result.title}
-                          </h3>
-                          <p className="mt-1 text-sm font-medium text-slate-400">
-                            {result.subtitle || result.module}
-                          </p>
-                        </div>
-                      </button>
-
-                      <Link
-                        href={result.href}
-                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-950/[0.08] bg-white/70 text-slate-400 transition duration-300 hover:bg-white hover:text-[#0B0D12]"
-                        aria-label="Open module"
-                      >
-                        <ArrowUpRight size={16} />
-                      </Link>
-                    </div>
-
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      <span
-                        className={`rounded-full border px-3 py-1 text-xs font-semibold ${moduleClass(
-                          result.module
-                        )}`}
-                      >
-                        {result.module}
-                      </span>
-
-                      {result.status ? (
-                        <span className="rounded-full border border-slate-950/[0.08] bg-white px-3 py-1 text-xs font-semibold text-slate-500">
-                          {result.status}
-                        </span>
-                      ) : null}
-
-                      {result.createdAt ? (
-                        <span className="rounded-full border border-slate-950/[0.08] bg-white px-3 py-1 text-xs font-semibold text-slate-400">
-                          {formatDate(result.createdAt)}
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <p className="text-sm leading-6 text-slate-500">
-                      {result.body || "No preview available."}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="devon-glass rounded-[2.25rem] p-6">
-          <div className="mb-5 flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-semibold tracking-tight text-[#0B0D12]">
-                Result Preview
               </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Copy the selected record.
-              </p>
             </div>
-
-            <button
-              onClick={copyResult}
-              disabled={!selectedResult}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0B0D12] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_55px_rgba(15,23,42,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#171A23] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
-              {copied ? "Copied" : "Copy Result"}
-            </button>
+            {query ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  inputRef.current?.focus();
+                }}
+                className="text-xs font-extrabold text-slate-400 transition hover:text-[#17171b]"
+              >
+                Clear query
+              </button>
+            ) : null}
           </div>
 
-          <div className="rounded-[1.55rem] border border-slate-950/[0.08] bg-white/70 p-4">
-            <pre className="max-h-[460px] overflow-auto whitespace-pre-wrap font-sans text-sm leading-7 text-slate-700">
-              {exportText}
-            </pre>
+          <div className="devon-scrollbar mt-4 max-h-[800px] space-y-2 overflow-auto pr-1">
+            {loading ? (
+              <SearchLoadingRows />
+            ) : (
+              <AnimatePresence initial={false} mode="popLayout">
+                {filteredResults.length ? (
+                  filteredResults.map((item, index) => (
+                    <SearchResultRow
+                      key={item.id}
+                      result={item}
+                      selected={selectedResult?.id === item.id}
+                      index={index}
+                      onSelect={() => setSelectedId(item.id)}
+                    />
+                  ))
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="rounded-[1.8rem] border border-dashed border-black/[0.1] bg-white/45 p-12 text-center"
+                  >
+                    <Search size={25} className="mx-auto text-slate-300" />
+                    <h3 className="mt-4 text-lg font-extrabold text-[#17171b]">
+                      No context matched yet
+                    </h3>
+                    <p className="mx-auto mt-2 max-w-sm text-sm font-semibold leading-6 text-slate-400">
+                      Try a person, organisation, status, deadline, phrase, or
+                      workspace name.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            )}
           </div>
         </div>
-      </div>
+
+        <div className="xl:sticky xl:top-[92px] xl:self-start">
+          <ResultSpotlight
+            result={loading ? null : selectedResult}
+            copied={copied}
+            onCopy={() => void copyContext()}
+          />
+        </div>
+      </section>
     </div>
   );
 }
 
-function MetricCard({
-  title,
-  value,
-  sub,
-  icon: Icon,
+function SearchResultRow({
+  result,
+  selected,
+  index,
+  onSelect,
 }: {
-  title: string;
-  value: number;
-  sub: string;
-  icon: ElementType;
+  result: UniversalSearchResult;
+  selected: boolean;
+  index: number;
+  onSelect: () => void;
 }) {
+  const Icon = kindIcons[result.kind];
+
   return (
-    <div className="devon-glass rounded-[1.7rem] p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#5B5DF5]">
-          <Icon size={18} />
+    <motion.button
+      type="button"
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{
+        opacity: 0,
+        scale: 0.985,
+        transition: { duration: 0.12, ease: "easeOut" },
+      }}
+      transition={{
+        delay: Math.min(index * 0.015, 0.18),
+        duration: 0.34,
+        ease: [0.16, 1, 0.3, 1],
+      }}
+      onClick={onSelect}
+      className={`group flex w-full items-center gap-4 rounded-[1.5rem] border p-3 text-left transition ${
+        selected
+          ? "border-[#6d5dfc]/20 bg-[#f0efff] shadow-[0_14px_44px_rgba(109,93,252,0.08)]"
+          : "border-transparent bg-white/48 hover:border-black/[0.055] hover:bg-white"
+      }`}
+    >
+      {result.imageUrl ? (
+        <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[1rem] bg-slate-100">
+          {result.imageUrl.startsWith("/") ? (
+            <Image
+              src={result.imageUrl}
+              alt=""
+              fill
+              sizes="56px"
+              className="object-cover object-top"
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={result.imageUrl}
+              alt=""
+              className="h-full w-full object-cover object-top"
+            />
+          )}
+        </span>
+      ) : (
+        <span
+          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[1rem] ${kindAccent(
+            result.kind
+          )}`}
+        >
+          <Icon size={19} />
+        </span>
+      )}
+
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          <span className="truncate text-sm font-extrabold text-[#17171b]">
+            {result.title}
+          </span>
+          <span className="shrink-0 rounded-full bg-black/[0.04] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.11em] text-slate-400">
+            {result.kind}
+          </span>
+        </span>
+        <span className="mt-1 line-clamp-1 block text-xs font-semibold text-slate-400">
+          {result.subtitle || result.body}
+        </span>
+      </span>
+
+      <ArrowRight
+        size={15}
+        className={`shrink-0 transition ${
+          selected
+            ? "text-[#6d5dfc]"
+            : "text-slate-300 group-hover:translate-x-0.5 group-hover:text-[#6d5dfc]"
+        }`}
+      />
+    </motion.button>
+  );
+}
+
+function ResultSpotlight({
+  result,
+  copied,
+  onCopy,
+}: {
+  result: UniversalSearchResult | null;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  if (!result) {
+    return (
+      <div className="overflow-hidden rounded-[2.4rem] border border-black/[0.07] bg-[#f7f5ef] p-10 text-center shadow-[0_24px_80px_rgba(15,23,42,0.07)]">
+        <Sparkles size={24} className="mx-auto text-[#a98743]" />
+        <h2 className="mt-5 text-2xl font-semibold tracking-[-0.03em] text-[#17171b]">
+          Context appears here
+        </h2>
+        <p className="mt-3 text-sm font-semibold leading-7 text-slate-400">
+          Search for anything and Morrow will surface the strongest matching
+          record with its next action.
+        </p>
+      </div>
+    );
+  }
+
+  const Icon = kindIcons[result.kind];
+  const formattedDate = formatResultDate(result.date);
+
+  return (
+    <motion.div
+      key={result.id}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+      className="overflow-hidden rounded-[2.4rem] border border-black/[0.07] bg-[#f7f5ef] shadow-[0_28px_90px_rgba(15,23,42,0.09)]"
+    >
+      {result.imageUrl ? (
+        <div className="relative aspect-[16/10] overflow-hidden bg-[#11131a]">
+          {result.imageUrl.startsWith("/") ? (
+            <Image
+              src={result.imageUrl}
+              alt={`Portrait of ${result.title}`}
+              fill
+              sizes="(min-width: 1280px) 42vw, 100vw"
+              className="object-cover object-top"
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={result.imageUrl}
+              alt={`Portrait of ${result.title}`}
+              className="h-full w-full object-cover object-top"
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b10]/72 via-transparent to-transparent" />
+          <span className="absolute bottom-5 left-5 rounded-full border border-white/18 bg-black/30 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-white backdrop-blur-xl">
+            {result.kind}
+          </span>
+        </div>
+      ) : (
+        <div className="flex h-36 items-center justify-between bg-[#0b0b10] px-7 text-white">
+          <span className="flex h-16 w-16 items-center justify-center rounded-[1.4rem] border border-white/10 bg-white/[0.07] text-[#d8b76a]">
+            <Icon size={25} />
+          </span>
+          <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/35">
+            {result.kind}
+          </span>
+        </div>
+      )}
+
+      <div className="p-7 md:p-8">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.13em] ${kindAccent(
+              result.kind
+            )}`}
+          >
+            {result.status || result.kind}
+          </span>
+          {formattedDate ? (
+            <span className="rounded-full bg-white/75 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.13em] text-slate-400">
+              {formattedDate}
+            </span>
+          ) : null}
         </div>
 
-        <ArrowUpRight size={16} className="text-slate-300" />
-      </div>
+        <h2 className="mt-5 text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-[#17171b] md:text-5xl">
+          {result.title}
+        </h2>
+        <p className="mt-4 text-sm font-extrabold leading-6 text-[#8a6b2d]">
+          {result.subtitle}
+        </p>
+        <p className="mt-5 whitespace-pre-wrap text-sm font-semibold leading-7 text-slate-500">
+          {result.body || "This record has no additional preview text yet."}
+        </p>
 
-      <p className="text-sm font-medium text-slate-400">{title}</p>
-      <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#0B0D12]">
-        {value}
-      </p>
-      <p className="mt-1 text-xs font-medium text-slate-400">{sub}</p>
+        <div className="mt-7 grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={onCopy}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-black/[0.07] bg-white/80 px-5 py-3.5 text-sm font-extrabold text-[#17171b] transition hover:-translate-y-0.5 hover:bg-white"
+          >
+            {copied ? <Check size={16} /> : <Crown size={16} />}
+            {copied ? "Context copied" : "Copy context"}
+          </button>
+          <Link
+            href={result.href}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0b0b10] px-5 py-3.5 text-sm font-extrabold text-white transition hover:-translate-y-0.5"
+          >
+            {result.actionLabel}
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function FilterButton({
+  active,
+  label,
+  count,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  count: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-extrabold transition ${
+        active
+          ? "bg-[#17171b] text-white shadow-[0_12px_30px_rgba(23,23,27,0.14)]"
+          : "border border-black/[0.06] bg-white/65 text-slate-500 hover:bg-white hover:text-[#17171b]"
+      }`}
+    >
+      {label}
+      <span
+        className={`rounded-full px-1.5 py-0.5 text-[9px] ${
+          active ? "bg-white/10" : "bg-black/[0.04]"
+        }`}
+      >
+        {count}
+      </span>
+    </button>
+  );
+}
+
+function SearchLoadingRows() {
+  return (
+    <div className="space-y-2" role="status" aria-label="Loading search results">
+      {[0, 1, 2, 3, 4].map((item) => (
+        <div
+          key={item}
+          className="flex items-center gap-4 rounded-[1.5rem] bg-white/45 p-3"
+        >
+          <div className="h-14 w-14 rounded-[1rem] bg-black/[0.045]" />
+          <div className="flex-1 space-y-2">
+            <div className="morrow-skeleton-line h-3 w-2/5 overflow-hidden rounded-full bg-black/[0.045]" />
+            <div className="morrow-skeleton-line h-2.5 w-3/4 overflow-hidden rounded-full bg-black/[0.035]" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

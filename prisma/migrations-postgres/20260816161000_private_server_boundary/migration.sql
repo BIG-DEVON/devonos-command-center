@@ -1,0 +1,36 @@
+-- Morrow is server-mediated. The public Data API receives no implicit table access.
+-- PostgreSQL roles used by Prisma and Supabase service operations remain available.
+ALTER TABLE public."MorrowUser" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."MorrowAuthSession" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."MorrowAccessRequest" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."MorrowAuthChallenge" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."HallOfFameMemberRecord" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."WorkspaceSettings" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."NewsItem" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."NewsSourceState" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."NewsMonitorRun" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."NewsDigest" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."NotificationRecord" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."NotificationDelivery" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."PushSubscriptionRecord" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."AutomationSchedule" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."AutomationRun" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."ApprovalRequest" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."ApprovalActivity" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."KpiItem" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."SocialDraft" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."AssetRecord" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."GlobalEvent" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."BirthdayProfile" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."AiDraft" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."ProjectRecord" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."AutopilotTask" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."ExecutiveReportSnapshot" ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon, authenticated;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  REVOKE ALL ON TABLES FROM anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  REVOKE ALL ON SEQUENCES FROM anon, authenticated;

@@ -27,6 +27,7 @@ export type AutopilotBriefResponse = {
     birthdays: number;
     aiDrafts: number;
     newsItems: number;
+    approvals: number;
     signals: number;
     critical: number;
     high: number;

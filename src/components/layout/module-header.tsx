@@ -14,27 +14,22 @@ export function ModuleHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="devon-module-header mb-6 overflow-hidden rounded-[28px] border border-black/[0.06] bg-white/78 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.02),0_20px_60px_rgba(0,0,0,0.055)] backdrop-blur-xl sm:p-7">
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+    <header className="devon-module-header mb-6 rounded-[22px] border border-black/[0.055] bg-white/92 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.02),0_12px_36px_rgba(0,0,0,0.035)] sm:p-6">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="max-w-3xl">
-          <div className="mb-5 flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-[12px] border border-black/[0.055] bg-[#f2f1ff] text-[#6558e8]">
+          <div className="mb-3 flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#f2f2f7] text-[#5f5f68]">
               <Icon size={17} strokeWidth={1.9} />
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-[0.17em] text-[#8f8f98]">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8e8e93]">
               {eyebrow}
-            </span>
-            <span className="h-1 w-1 rounded-full bg-[#c4c4ca]" />
-            <span className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Live
             </span>
           </div>
 
-          <h2 className="max-w-3xl text-[clamp(2.15rem,5vw,4.45rem)] font-semibold leading-[0.98] tracking-[-0.065em] text-[#18181c]">
+          <h2 className="max-w-3xl text-[clamp(2rem,4vw,3.25rem)] font-semibold leading-[1.02] tracking-[-0.055em] text-[#1d1d1f]">
             {title}
           </h2>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-[#797982] sm:text-[15px] sm:leading-7">
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-[#6e6e73] sm:text-[15px]">
             {description}
           </p>
         </div>

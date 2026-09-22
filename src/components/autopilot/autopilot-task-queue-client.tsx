@@ -156,7 +156,7 @@ export function AutopilotTaskQueueClient() {
       setTasks(await fetchTasks());
     } catch (error) {
       console.error("Failed to load Autopilot tasks:", error);
-      setErrorMessage("DevonOS could not load the Autopilot task queue.");
+      setErrorMessage("Morrow could not load the Autopilot task queue.");
     } finally {
       setLoaded(true);
     }
@@ -175,7 +175,7 @@ export function AutopilotTaskQueueClient() {
         console.error("Failed to load Autopilot tasks:", error);
 
         if (!cancelled) {
-          setErrorMessage("DevonOS could not load the Autopilot task queue.");
+          setErrorMessage("Morrow could not load the Autopilot task queue.");
         }
       })
       .finally(() => {
@@ -223,7 +223,7 @@ export function AutopilotTaskQueueClient() {
     } catch (error) {
       console.error("Failed to generate Autopilot tasks:", error);
       setErrorMessage(
-        "DevonOS could not generate tasks from the current signals."
+        "Morrow could not generate tasks from the current signals."
       );
     } finally {
       setGenerating(false);
@@ -257,7 +257,7 @@ export function AutopilotTaskQueueClient() {
       );
     } catch (error) {
       console.error("Failed to update task:", error);
-      setErrorMessage("DevonOS could not update that task.");
+      setErrorMessage("Morrow could not update that task.");
     } finally {
       setBusyId(null);
     }
@@ -280,7 +280,7 @@ export function AutopilotTaskQueueClient() {
       setTasks((current) => current.filter((task) => task.id !== id));
     } catch (error) {
       console.error("Failed to delete task:", error);
-      setErrorMessage("DevonOS could not delete that task.");
+      setErrorMessage("Morrow could not delete that task.");
     } finally {
       setBusyId(null);
     }
@@ -301,7 +301,7 @@ export function AutopilotTaskQueueClient() {
             </h2>
 
             <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 text-slate-500">
-              DevonOS reads your Autopilot signals and creates a practical task
+              Morrow reads your Autopilot signals and creates a practical task
               queue so your work stops living inside your head.
             </p>
           </div>
@@ -362,7 +362,7 @@ export function AutopilotTaskQueueClient() {
           <EmptyState
             icon={RefreshCcw}
             title="Loading task queue"
-            text="DevonOS is fetching your Autopilot tasks."
+            text="Morrow is fetching your Autopilot tasks."
           />
         ) : activeTasks.length === 0 ? (
           <EmptyState

@@ -77,7 +77,7 @@ export function AutopilotContentFactoryClient() {
       setResult(data);
     } catch (error) {
       console.error("Content Factory failed:", error);
-      setErrorMessage("DevonOS could not create content drafts.");
+      setErrorMessage("Morrow could not create content drafts.");
     } finally {
       setWorking(false);
     }
@@ -100,7 +100,7 @@ export function AutopilotContentFactoryClient() {
           </h2>
 
           <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 text-slate-500">
-            DevonOS scans upcoming birthdays, upcoming events, and high-priority
+            Morrow scans upcoming birthdays, upcoming events, and high-priority
             news signals, then creates ready-to-review Social Studio drafts.
           </p>
         </div>
@@ -134,7 +134,7 @@ export function AutopilotContentFactoryClient() {
             </div>
           ) : (
             <p className="text-sm font-semibold leading-7 text-slate-500">
-              Click the button and DevonOS will prepare draft content from your
+              Click the button and Morrow will prepare draft content from your
               saved records.
             </p>
           )}

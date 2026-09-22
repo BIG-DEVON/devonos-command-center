@@ -8,8 +8,8 @@ export default function SettingsPage() {
       <section className="mx-auto max-w-[1500px]">
         <ModuleHeader
           eyebrow="Settings"
-          title="Make DevonOS work the way you do."
-          description="Set your identity, default tone, brand direction, writing rules, posting rules, and system preferences."
+          title="Your system, on your terms."
+          description="Control appearance, sound, alerts, schedule, identity, data safety, and the access model for your private command center."
           icon={Settings}
         />
         <SettingsCommandClient />

@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Copy,
   Crown,
+  FileCheck2,
   FileText,
   Folder,
   Keyboard,
@@ -41,7 +42,7 @@ const modules: ModuleRecord[] = [
   {
     title: "Dashboard",
     href: "/dashboard",
-    description: "Return to the main DevonOS command overview.",
+    description: "Return to the main Morrow command overview.",
     icon: BarChart3,
     tag: "Overview",
   },
@@ -52,6 +53,14 @@ const modules: ModuleRecord[] = [
     icon: FileText,
     dataKey: "news",
     tag: "Briefs",
+  },
+  {
+    title: "Approval Center",
+    href: "/approvals",
+    description: "Route decisions, record outcomes, and preserve audit history.",
+    icon: FileCheck2,
+    dataKey: "approvals",
+    tag: "Decisions",
   },
   {
     title: "Social Studio",
@@ -111,7 +120,7 @@ const modules: ModuleRecord[] = [
   {
     title: "Search",
     href: "/search",
-    description: "Search across your saved DevonOS records.",
+    description: "Search across your saved Morrow records.",
     icon: Search,
     tag: "Find",
   },
@@ -139,6 +148,7 @@ const workflows = [
       "Open News Intelligence and collect important updates.",
       "Check Calendar Command for upcoming events or deadlines.",
       "Review Social Studio drafts that need approval.",
+      "Clear decisions waiting in Approval Center.",
       "Update KPI Command with completed or delayed items.",
       "Generate a quick report in Reports Command.",
     ],
@@ -167,7 +177,7 @@ const workflows = [
 
 function buildChecklist() {
   return [
-    "DEVONOS DAILY COMMAND CHECKLIST",
+    "MORROW DAILY COMMAND CHECKLIST",
     "",
     "1. Check News Intelligence for new public updates.",
     "2. Review Calendar Command for upcoming dates.",
@@ -176,6 +186,7 @@ function buildChecklist() {
     "5. Organize new creative files in Asset Library.",
     "6. Check Projects Command for urgent workstreams.",
     "7. Generate a command report when needed.",
+    "8. Clear or escalate pending approvals.",
     "",
     "End of checklist.",
   ].join("\n");
@@ -359,7 +370,7 @@ export function CommandCenterClient() {
             </div>
 
             <h2 className="text-2xl font-semibold tracking-tight text-[#0B0D12]">
-              Open any DevonOS workspace
+              Open any Morrow workspace
             </h2>
 
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
