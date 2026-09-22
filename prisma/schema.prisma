@@ -59,6 +59,7 @@ model MorrowAccessRequest {
 
   @@index([status, createdAt])
   @@index([email, status])
+  @@index([reviewedById])
 }
 
 model MorrowAuthChallenge {
