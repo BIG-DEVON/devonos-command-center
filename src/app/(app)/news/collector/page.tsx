@@ -8,9 +8,9 @@ export default function NewsCollectorPage() {
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <section className="mx-auto max-w-[1500px]">
         <ModuleHeader
-          eyebrow="News Collector"
-          title="Build today’s intelligence brief."
-          description="Add the relevant stories, keep the source attached, and prepare a polished internal update in one pass."
+          eyebrow="News monitor"
+          title="Add news article"
+          description="Save an article with its source, topic, date, and review status."
           icon={Newspaper}
           actions={
             <Link href="/news" className="devon-secondary-button">

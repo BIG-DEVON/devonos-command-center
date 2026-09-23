@@ -8,8 +8,8 @@ export default function SocialPage() {
       <section className="mx-auto max-w-[1500px]">
         <ModuleHeader
           eyebrow="Social Studio"
-          title="Create with context. Publish with intent."
-          description="Prepare platform-ready posts, keep campaign direction attached, and move every draft through a clear review state."
+          title="Social content"
+          description="Prepare posts, attach campaign context, and move each draft through review."
           icon={Send}
         />
         <SocialStudioClient />

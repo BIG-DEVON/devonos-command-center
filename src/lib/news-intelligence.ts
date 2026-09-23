@@ -165,6 +165,26 @@ export const NEWS_SOURCES: NewsSourceDefinition[] = [
     priority: 95,
   },
   {
+    key: "google-news-jrb",
+    name: "Google News · JRB & NRS",
+    homepage: "https://news.google.com/",
+    feedUrl:
+      "https://news.google.com/rss/search?q=%22Joint+Revenue+Board%22+OR+%22Nigeria+Revenue+Service%22+OR+%22Joint+Tax+Board%22&hl=en-NG&gl=NG&ceid=NG:en",
+    kind: "RSS",
+    channel: "Newspaper",
+    priority: 105,
+  },
+  {
+    key: "google-news-tax-reform",
+    name: "Google News · Nigerian tax reform",
+    homepage: "https://news.google.com/",
+    feedUrl:
+      "https://news.google.com/rss/search?q=%28%22Tax+Ombud%22+OR+%22Tax+Appeal+Tribunal%22+OR+%22Olusegun+Adesokan%22+OR+%22harmonised+tax%22%29+Nigeria&hl=en-NG&gl=NG&ceid=NG:en",
+    kind: "RSS",
+    channel: "Newspaper",
+    priority: 100,
+  },
+  {
     key: "jrb-official",
     name: "Joint Revenue Board",
     homepage: "https://www.jrb.gov.ng/",
@@ -212,6 +232,13 @@ const xmlParser = new XMLParser({
 const keywordRules = [
   { pattern: /\bjoint revenue board\b/i, weight: 12, topic: "JRB & NRS" },
   { pattern: /\bnigeria revenue service\b/i, weight: 12, topic: "JRB & NRS" },
+  { pattern: /\bjoint revenue board establishment act\b/i, weight: 12, topic: "JRB & NRS" },
+  { pattern: /\bolusegun adesokan\b/i, weight: 11, topic: "JRB leadership" },
+  { pattern: /\bzacch adedeji\b/i, weight: 9, topic: "JRB leadership" },
+  { pattern: /\btax ombud(?:sman)?\b|\btaxpayer bill of rights\b/i, weight: 10, topic: "Taxpayer protection" },
+  { pattern: /\btax appeal tribunal\b/i, weight: 10, topic: "Tax disputes" },
+  { pattern: /\bharmoni[sz]ed tax(?:es| framework)?\b|\bmultiple taxation\b/i, weight: 9, topic: "Tax harmonisation" },
+  { pattern: /\broadblock(?:s)?\b.{0,40}\btax|\btax.{0,40}\broadblock(?:s)?\b/i, weight: 8, topic: "Tax enforcement" },
   { pattern: /\bfederal inland revenue service\b/i, weight: 10, topic: "Revenue administration" },
   { pattern: /\b(?:jrb|jtb)\b/i, weight: 8, topic: "JRB & NRS" },
   { pattern: /\bnrs\b/i, weight: 8, topic: "JRB & NRS" },
@@ -299,6 +326,10 @@ function normalizeHeadline(value: string): string {
     .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function fingerprintFor(article: CollectedArticle): string {
@@ -393,7 +424,17 @@ function parseRssFeed(
   return asArray(rawItems)
     .slice(0, 100)
     .map((item) => {
-      const headline = stripMarkup(item.title, 260);
+      const rawHeadline = stripMarkup(item.title, 260);
+      const googlePublisher =
+        source.key.startsWith("google-news-")
+          ? stripMarkup(item.source, 120)
+          : "";
+      const headline = googlePublisher
+        ? rawHeadline.replace(
+            new RegExp(`\\s+-\\s+${escapeRegExp(googlePublisher)}$`, "i"),
+            ""
+          )
+        : rawHeadline;
       const url = extractLink(item, source.homepage);
       const summary = stripMarkup(
         item.description ?? item.summary ?? item.encoded ?? item.content
@@ -404,9 +445,14 @@ function parseRssFeed(
 
       return {
         headline,
-        source: source.name,
+        source: googlePublisher || source.name,
         sourceKey: source.key,
-        sourceDomain: sourceDomain(url || source.homepage),
+        sourceDomain: googlePublisher
+          ? googlePublisher
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/^-|-$/g, "")
+          : sourceDomain(url || source.homepage),
         channel: source.channel,
         contentType: "Article" as const,
         url,
@@ -800,7 +846,7 @@ async function collectSource(
 
 function isRecent(article: CollectedArticle): boolean {
   if (!article.publishedAt) return true;
-  const oldestAllowed = Date.now() - 1000 * 60 * 60 * 24 * 35;
+  const oldestAllowed = Date.now() - 1000 * 60 * 60 * 24 * 60;
   return article.publishedAt.getTime() >= oldestAllowed;
 }
 

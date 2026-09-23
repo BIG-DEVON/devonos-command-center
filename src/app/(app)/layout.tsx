@@ -13,6 +13,7 @@ export default async function ProtectedAppLayout({
   return (
     <AppShell
       displayName={session.displayName}
+      role={session.role}
       showOnboarding={!session.onboardingCompletedAt}
     >
       {children}

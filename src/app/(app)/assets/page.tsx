@@ -8,8 +8,8 @@ export default function AssetsPage() {
       <section className="mx-auto max-w-[1500px]">
         <ModuleHeader
           eyebrow="Asset Library"
-          title="Everything ready when the work needs it."
-          description="Keep official files, creative references, working links, and usage notes organized by project and status."
+          title="Asset library"
+          description="Official files, creative references, working links, and usage notes organized by project and status."
           icon={Folder}
         />
         <AssetLibraryClient />

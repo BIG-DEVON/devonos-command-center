@@ -28,7 +28,7 @@ export const mainNavigation: NavigationItem[] = [
     name: "Dashboard",
     href: "/dashboard",
     icon: Gauge,
-    description: "Autopilot overview",
+    description: "Workspace overview",
   },
   {
     name: "Autopilot",
@@ -61,13 +61,13 @@ export const mainNavigation: NavigationItem[] = [
     description: "Culture moments",
   },
   {
-    name: "KPI Command",
+    name: "KPI Tracking",
     href: "/kpi",
     icon: Target,
     description: "Track outcomes",
   },
   {
-    name: "Global Events",
+    name: "Events",
     href: "/events",
     icon: Globe2,
     description: "Plan notable days",
@@ -82,13 +82,13 @@ export const mainNavigation: NavigationItem[] = [
     name: "Reports",
     href: "/reports",
     icon: BarChart3,
-    description: "Command summaries",
+    description: "Workspace summaries",
   },
   {
-    name: "AI Studio",
+    name: "Writing Studio",
     href: "/ai",
     icon: Bot,
-    description: "Generate drafts",
+    description: "Draft and refine content",
   },
 ];
 

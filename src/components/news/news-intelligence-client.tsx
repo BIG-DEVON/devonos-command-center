@@ -16,7 +16,6 @@ import {
   Copy,
   ExternalLink,
   FileText,
-  Flame,
   Globe2,
   Inbox,
   Landmark,
@@ -267,7 +266,7 @@ export function NewsIntelligenceClient() {
         !digestResponse.ok ||
         !briefingResponse.ok
       ) {
-        throw new Error("One or more intelligence services did not respond.");
+        throw new Error("One or more news services did not respond.");
       }
 
       const [newsData, monitorData, digestData, briefingData] = (await Promise.all([
@@ -283,7 +282,7 @@ export function NewsIntelligenceClient() {
       ];
 
       if (!newsData.ok || !monitorData.ok || !digestData.ok || !briefingData.ok) {
-        throw new Error("The intelligence response was incomplete.");
+        throw new Error("The news response was incomplete.");
       }
 
       const nextItems = newsData.newsItems ?? [];
@@ -396,9 +395,9 @@ export function NewsIntelligenceClient() {
       setNotice({
         tone: "success",
         text: data.run.articlesCreated
-          ? `${data.run.articlesCreated} new relevant signal${data.run.articlesCreated === 1 ? "" : "s"} collected.`
+          ? `${data.run.articlesCreated} relevant article${data.run.articlesCreated === 1 ? "" : "s"} added.`
           : data.run.articlesRelevant
-            ? `${data.run.duplicatesSkipped} known signal${data.run.duplicatesSkipped === 1 ? "" : "s"} safely deduplicated.`
+            ? `${data.run.duplicatesSkipped} known article${data.run.duplicatesSkipped === 1 ? "" : "s"} updated without duplication.`
             : "The scan is complete. No relevant new mention was found.",
       });
     } catch (error) {
@@ -435,13 +434,13 @@ export function NewsIntelligenceClient() {
               : "Signal status updated.",
       });
     } catch (error) {
-      console.error("Failed to update signal:", error);
+      console.error("Failed to update article:", error);
       setItems((current) =>
         current.map((candidate) =>
           candidate.id === item.id ? { ...candidate, status: previous } : candidate
         )
       );
-      setNotice({ tone: "error", text: "That signal could not be updated." });
+      setNotice({ tone: "error", text: "That article could not be updated." });
     }
   }
 
@@ -514,10 +513,7 @@ export function NewsIntelligenceClient() {
 
   return (
     <div className="space-y-5">
-      <section className="relative overflow-hidden rounded-[2.8rem] border border-white/10 bg-[#08090d] text-white shadow-[0_42px_130px_rgba(10,11,18,0.22)]">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_82%_16%,rgba(108,86,255,0.34),transparent_30%),radial-gradient(circle_at_12%_100%,rgba(232,190,80,0.15),transparent_33%)]" />
-        <div className="pointer-events-none absolute -right-28 -top-52 h-[38rem] w-[38rem] rounded-full border border-white/[0.055]" />
-        <div className="pointer-events-none absolute -right-4 -top-36 h-[29rem] w-[29rem] rounded-full border border-white/[0.055]" />
+      <section className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-[#111216] text-white shadow-[0_24px_70px_rgba(10,11,18,0.16)]">
 
         <div className="relative grid gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)] lg:p-10">
           <div className="flex min-w-0 flex-col justify-between">
@@ -525,21 +521,21 @@ export function NewsIntelligenceClient() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/55">
                   <Radar size={13} className={scanning ? "animate-pulse" : "text-[#B8AEFF]"} />
-                  {scanning ? "Scanning the public record" : "Intelligence room · live"}
+                  {scanning ? "Checking sources" : "News monitor"}
                 </span>
                 <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.08] px-3.5 py-2 text-[10px] font-bold text-emerald-200">
                   <ShieldCheck size={13} />
-                  Source preserved
+                  Original links preserved
                 </span>
               </div>
 
-              <h2 className="mt-8 max-w-4xl text-[clamp(2.8rem,6vw,5.5rem)] font-semibold leading-[0.91] tracking-[-0.072em]">
-                See the signal.
-                <span className="block text-white/34">Leave the noise.</span>
+              <h2 className="mt-7 max-w-4xl text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[0.98] tracking-[-0.055em]">
+                JRB and Nigerian tax news.
+                <span className="block text-white/40">One verified view.</span>
               </h2>
               <p className="mt-6 max-w-2xl text-sm leading-7 text-white/54 sm:text-base">
                 {briefing?.summary ??
-                  "Morrow is assembling the shape of the current tax and revenue news cycle."}
+                  "Current coverage from official sources and established Nigerian publishers."}
               </p>
             </div>
 
@@ -555,7 +551,7 @@ export function NewsIntelligenceClient() {
                 ) : (
                   <RefreshCcw size={16} />
                 )}
-                {scanning ? "Reading sources…" : "Refresh intelligence"}
+                {scanning ? "Checking sources…" : "Refresh news"}
               </button>
               <button
                 type="button"
@@ -568,7 +564,7 @@ export function NewsIntelligenceClient() {
                 ) : (
                   <FileText size={16} />
                 )}
-                {selectedIds.length ? `Build brief · ${selectedIds.length}` : "Build executive brief"}
+                {selectedIds.length ? `Build brief · ${selectedIds.length}` : "Build daily brief"}
               </button>
             </div>
           </div>
@@ -577,20 +573,20 @@ export function NewsIntelligenceClient() {
             <div className="flex items-start justify-between gap-5">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/38">
-                  Signal pressure
+                  Coverage level
                 </p>
                 <p className="mt-2 text-xl font-semibold">
                   {briefing?.pressureLabel ?? "Reading"}
                 </p>
-                <p className="mt-1 text-xs text-white/38">News-cycle intensity</p>
+                <p className="mt-1 text-xs text-white/38">Current seven-day volume</p>
               </div>
               <PressureRing score={briefing?.pressure ?? 0} />
             </div>
 
             <div className="mt-6 border-t border-white/10 pt-5">
               <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4C9FF]">
-                <Flame size={12} />
-                Lead signal
+                <Newspaper size={12} />
+                Top story
               </div>
               {briefing?.lead ? (
                 <button
@@ -605,13 +601,13 @@ export function NewsIntelligenceClient() {
                     {briefing.lead.why}
                   </p>
                   <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-white/68">
-                    Open intelligence lens
+                    View article details
                     <ArrowRight size={13} className="transition group-hover:translate-x-0.5" />
                   </span>
                 </button>
               ) : (
                 <p className="mt-3 text-sm leading-6 text-white/42">
-                  No lead signal is visible. Run the monitor when you are ready.
+                  No priority article is available yet. Refresh the monitor to check again.
                 </p>
               )}
             </div>
@@ -651,16 +647,16 @@ export function NewsIntelligenceClient() {
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           icon={Zap}
-          label="High-priority"
+          label="Priority articles"
           value={briefing?.metrics.highPriority ?? 0}
-          note="Strong watchlist matches"
+          note="Strong JRB and tax matches"
           accent="violet"
         />
         <MetricCard
           icon={Inbox}
-          label="Waiting review"
+          label="Needs review"
           value={briefing?.metrics.waitingReview ?? 0}
-          note="New or shortlisted signals"
+          note="New or shortlisted articles"
           accent="gold"
         />
         <MetricCard
@@ -672,7 +668,7 @@ export function NewsIntelligenceClient() {
         />
         <MetricCard
           icon={ShieldCheck}
-          label="Healthy monitors"
+          label="Active sources"
           value={connectedSources}
           note={`${sources.length || 17} configured · ${pendingConnections} to connect`}
           accent="green"
@@ -683,9 +679,9 @@ export function NewsIntelligenceClient() {
         <div className="devon-surface min-w-0 overflow-hidden p-6 sm:p-7">
           <SectionTitle
             icon={BarChart3}
-            eyebrow="Seven-day rhythm"
-            title="The shape of the news cycle."
-            detail="Volume shows how loud the cycle is. Gold marks the highest-priority signals within it."
+            eyebrow="Last seven days"
+            title="Coverage by day"
+            detail="Article volume and high-priority JRB or tax developments."
           />
           <SignalTimeline briefing={briefing} />
           <SourceComposition briefing={briefing} />
@@ -694,9 +690,9 @@ export function NewsIntelligenceClient() {
         <div className="devon-surface min-w-0 p-6 sm:p-7">
           <SectionTitle
             icon={Layers3}
-            eyebrow="Topic movement"
-            title="What is gaining ground."
-            detail="Current seven-day clusters compared with the seven days before them."
+            eyebrow="Topics"
+            title="Coverage trends"
+            detail="Current seven-day topics compared with the previous seven days."
           />
           <div className="space-y-3">
             {(briefing?.topics ?? []).length ? (
@@ -713,7 +709,7 @@ export function NewsIntelligenceClient() {
                 />
               ))
             ) : (
-              <QuietState text="Topic movement will appear after relevant signals are collected." />
+              <QuietState text="Topic trends will appear after relevant articles are collected." />
             )}
           </div>
         </div>
@@ -725,13 +721,13 @@ export function NewsIntelligenceClient() {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#7A69F4]">
-                  Intelligence inbox
+                  News feed
                 </p>
                 <h3 className="mt-2 text-2xl font-semibold tracking-[-0.045em] text-[#202025]">
-                  Read less. Understand more.
+                  Articles requiring review
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-[#85858e]">
-                  {filteredItems.length} signal{filteredItems.length === 1 ? "" : "s"} in this lens. Every source remains one click away.
+                  {filteredItems.length} article{filteredItems.length === 1 ? "" : "s"}. Open the original source before external use.
                 </p>
               </div>
               <div className="relative w-full lg:w-[300px]">
@@ -825,8 +821,8 @@ export function NewsIntelligenceClient() {
                 icon={Inbox}
                 text={
                   items.length
-                    ? "No signal matches this lens. Clear a filter to widen the view."
-                    : "The intelligence desk is clear. Run the monitor to collect the first source-linked signal."
+                    ? "No article matches these filters. Clear a filter to widen the view."
+                    : "No articles have been collected yet. Refresh the monitor to check the connected sources."
                 }
                 action={
                   items.length ? (
@@ -841,7 +837,7 @@ export function NewsIntelligenceClient() {
                         setTopicFilter("All");
                       }}
                     >
-                      Reset intelligence lens
+                      Reset filters
                     </button>
                   ) : undefined
                 }
@@ -893,10 +889,10 @@ export function NewsIntelligenceClient() {
               </div>
               <p className="mt-3 text-[11px] leading-5 text-[#97979f]">
                 {selectedIds.length
-                  ? `${selectedIds.length} checked signal${selectedIds.length === 1 ? "" : "s"} will be used.`
+                  ? `${selectedIds.length} selected article${selectedIds.length === 1 ? "" : "s"} will be used.`
                   : shortlistedCount
-                    ? `${shortlistedCount} shortlisted signal${shortlistedCount === 1 ? "" : "s"} will be used.`
-                    : "Morrow will use today’s strongest matching signals and retain every source link."}
+                    ? `${shortlistedCount} shortlisted article${shortlistedCount === 1 ? "" : "s"} will be used.`
+                    : "Morrow will use today’s highest-priority articles and retain every source link."}
               </p>
             </div>
             <div className="p-4">
@@ -915,7 +911,7 @@ export function NewsIntelligenceClient() {
                   </pre>
                 </div>
               ) : (
-                <QuietState text="Shortlist signals or let Morrow use today’s strongest source-linked matches." />
+                <QuietState text="Shortlist articles or use today’s highest-priority source-linked matches." />
               )}
             </div>
           </section>
@@ -961,7 +957,7 @@ export function NewsIntelligenceClient() {
 
           <div className="rounded-[1.5rem] border border-black/[0.055] bg-white/60 px-4 py-3 text-[10px] leading-5 text-[#8d8d96]">
             <ShieldCheck size={12} className="mr-1.5 inline text-emerald-600" />
-            {briefing?.methodology ?? "All intelligence remains tied to saved source records."}
+            {briefing?.methodology ?? "Every article remains tied to its saved source record."}
             {latestRun ? ` Last monitor completed ${relativeTime(latestRun.completedAt)}.` : ""}
           </div>
         </aside>
@@ -1141,7 +1137,7 @@ function SourceComposition({ briefing }: { briefing: NewsExecutiveBriefing | nul
               </div>
             ))
           ) : (
-            <p className="text-xs leading-5 text-[#9999a1]">Composition appears as signals arrive.</p>
+            <p className="text-xs leading-5 text-[#9999a1]">Source coverage appears as articles arrive.</p>
           )}
         </div>
       </div>
@@ -1151,7 +1147,7 @@ function SourceComposition({ briefing }: { briefing: NewsExecutiveBriefing | nul
         <div className="relative">
           <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.18em] text-white/42">
             <ShieldCheck size={13} className="text-emerald-300" />
-            Defendable by design
+            Source tracking
           </div>
           <p className="mt-3 text-sm font-semibold leading-5 tracking-[-0.02em]">
             Every conclusion keeps its evidence attached.
@@ -1337,7 +1333,7 @@ function SignalCard({
               <span>·</span>
               <span>{publishedDate(item.publishedAt)}</span>
               <span>·</span>
-              <span>signal {String(index + 1).padStart(2, "0")}</span>
+              <span>article {String(index + 1).padStart(2, "0")}</span>
             </div>
           </button>
 
@@ -1391,7 +1387,7 @@ function FocusedSignal({
   onStatus: (status: NewsStatus) => void;
 }) {
   if (!item) {
-    return <QuietState icon={Newspaper} text="Select a signal to open its intelligence lens." />;
+    return <QuietState icon={Newspaper} text="Select an article to view its details." />;
   }
   const source = provenance(item.channel);
   return (
@@ -1400,7 +1396,7 @@ function FocusedSignal({
       <div className="relative">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/34">Focused intelligence</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/34">Article details</p>
             <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[10px] font-semibold text-white/62">
               <ShieldCheck size={11} className="text-emerald-300" />
               {source.label}
@@ -1412,7 +1408,7 @@ function FocusedSignal({
           </div>
         </div>
         <h3 className="mt-6 text-2xl font-semibold leading-8 tracking-[-0.04em]">{item.headline}</h3>
-        <p className="mt-4 text-sm leading-6 text-white/52">{item.summary || "The source did not supply a summary. Open the original before using this signal."}</p>
+        <p className="mt-4 text-sm leading-6 text-white/52">{item.summary || "The source did not supply a summary. Open the original before using this article."}</p>
 
         <div className="mt-5 space-y-2.5 rounded-[1.35rem] border border-white/10 bg-white/[0.055] p-4">
           <LensRow label="Publisher" value={item.source || "Not supplied"} />
@@ -1490,16 +1486,15 @@ function QuietState({
 function NewsLoading() {
   return (
     <div className="space-y-5">
-      <div className="relative min-h-[35rem] overflow-hidden rounded-[2.8rem] bg-[#08090d]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_76%_20%,rgba(108,86,255,0.28),transparent_32%)]" />
+      <div className="relative min-h-[24rem] overflow-hidden rounded-[1.8rem] bg-[#111216]">
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
           <div className="relative flex h-28 w-28 items-center justify-center">
             <div className="absolute inset-0 animate-ping rounded-full border border-violet-300/20" />
             <div className="absolute inset-4 animate-pulse rounded-full border border-white/12" />
             <Radar size={26} />
           </div>
-          <p className="mt-7 text-[10px] font-bold uppercase tracking-[0.28em] text-white/38">Opening the intelligence room</p>
-          <p className="mt-3 text-lg font-semibold">Separating signal from noise…</p>
+          <p className="mt-7 text-[10px] font-bold uppercase tracking-[0.28em] text-white/38">News monitor</p>
+          <p className="mt-3 text-lg font-semibold">Loading current coverage…</p>
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

@@ -8,8 +8,8 @@ export default function ProjectsPage() {
       <section className="mx-auto max-w-[1500px]">
         <ModuleHeader
           eyebrow="Projects"
-          title="Move the important work forward."
-          description="Keep every objective, owner, deliverable, deadline, and decision attached to the work it belongs to."
+          title="Projects"
+          description="Objectives, owners, deliverables, deadlines, and decisions."
           icon={Briefcase}
         />
         <ProjectsCommandClient />

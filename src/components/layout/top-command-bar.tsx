@@ -28,6 +28,7 @@ import {
 import { mainNavigation, utilityNavigation } from "@/config/navigation";
 import { useDevonPreferences } from "@/components/providers/devon-preferences-provider";
 import { UniversalSearchPalette } from "@/components/search/universal-search-palette";
+import { canCreateWorkspaceContent } from "@/lib/morrow-permissions";
 
 type NavigationEntry = {
   name: string;
@@ -119,7 +120,7 @@ function isItemActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function TopCommandBar() {
+export function TopCommandBar({ role }: { role: string }) {
   const pathname = usePathname();
   const { settings, playSound } = useDevonPreferences();
   const notificationFetchCompleted = useRef(false);
@@ -131,6 +132,7 @@ export function TopCommandBar() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const canCreate = canCreateWorkspaceContent(role);
 
   const activeItem =
     allNavigation
@@ -351,7 +353,7 @@ export function TopCommandBar() {
             className="group hidden h-10 w-full max-w-[430px] items-center gap-3 rounded-[12px] border border-black/[0.065] bg-white/82 px-3 text-left text-[13px] text-[#8e8e93] shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition hover:border-black/[0.11] hover:bg-white md:flex"
           >
             <Search size={15} />
-            <span className="flex-1">Search people, work, or anything</span>
+            <span className="flex-1">Search Morrow</span>
             <kbd className="flex items-center gap-1 rounded-[7px] border border-black/[0.07] bg-[#f6f6f8] px-2 py-1 text-[10px] font-semibold text-[#85858e]">
               <Command size={10} />
               K
@@ -368,7 +370,7 @@ export function TopCommandBar() {
               <Search size={18} />
             </button>
 
-            <div className="relative hidden sm:block">
+            {canCreate ? <div className="relative hidden sm:block">
               <button
                 type="button"
                 onClick={() => {
@@ -411,7 +413,7 @@ export function TopCommandBar() {
                   </div>
                 </PopoverCard>
               ) : null}
-            </div>
+            </div> : null}
 
             {settings.inAppNotifications ? (
               <div className="relative">
@@ -542,7 +544,7 @@ export function TopCommandBar() {
                     Morrow
                   </span>
                   <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#9b9ba3]">
-                    Command Center
+                    JRB workspace
                   </span>
                 </span>
               </Link>
@@ -558,7 +560,7 @@ export function TopCommandBar() {
 
             <div className="devon-scrollbar flex-1 overflow-y-auto p-4">
               <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-[#9e9ea6]">
-                All workspaces
+                Workspace
               </p>
               <nav className="grid grid-cols-2 gap-2" aria-label="All workspaces">
                 {allNavigation.map((item) => {

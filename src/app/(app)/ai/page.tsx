@@ -7,9 +7,9 @@ export default function AiPage() {
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <section className="mx-auto max-w-[1500px]">
         <ModuleHeader
-          eyebrow="AI Studio"
-          title="Shape raw thinking into useful drafts."
-          description="Give every caption, statement, brief, and concept a clear direction—then keep the versions that are worth developing."
+          eyebrow="Writing"
+          title="Writing Studio"
+          description="Draft and refine captions, statements, briefs, and campaign concepts."
           icon={Bot}
         />
         <AiStudioClient />

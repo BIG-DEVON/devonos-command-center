@@ -8,8 +8,8 @@ export default function ApprovalsPage() {
       <section className="mx-auto max-w-[1500px]">
         <ModuleHeader
           eyebrow="Approvals"
-          title="Make the decision. Keep the reason."
-          description="Route work for review, capture the outcome, and preserve a clean audit trail for every important decision."
+          title="Approvals"
+          description="Review work, record decisions, and keep the audit trail."
           icon={FileCheck2}
         />
         <ApprovalCenterClient />

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { mainNavigation, utilityNavigation } from "@/config/navigation";
+import { roleLabel } from "@/lib/morrow-permissions";
 
 type NavigationEntry = {
   name: string;
@@ -65,7 +66,13 @@ function NavigationList({
   );
 }
 
-export function Sidebar({ displayName }: { displayName: string }) {
+export function Sidebar({
+  displayName,
+  role,
+}: {
+  displayName: string;
+  role: string;
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -92,7 +99,7 @@ export function Sidebar({ displayName }: { displayName: string }) {
                 Morrow
               </span>
               <span className="mt-0.5 block text-[10px] font-medium tracking-[0.02em] text-[#8e8e93]">
-                Executive workspace
+                JRB workspace
               </span>
             </span>
           </Link>
@@ -132,7 +139,7 @@ export function Sidebar({ displayName }: { displayName: string }) {
                 {displayName || "Morrow member"}
               </span>
               <span className="mt-0.5 block text-[10px] text-[#8e8e93]">
-                Sign out
+                {roleLabel(role)} · Sign out
               </span>
             </span>
             <LogOut size={14} className="text-[#a1a1a8] group-hover:text-[#34343a]" />

@@ -120,7 +120,13 @@ function formatDate(dateString: string) {
   }).format(new Date(dateString));
 }
 
-export function SettingsCommandClient() {
+export function SettingsCommandClient({
+  canManageAccess,
+  canManageWorkspace,
+}: {
+  canManageAccess: boolean;
+  canManageWorkspace: boolean;
+}) {
   const { applySettings, playSound } = useDevonPreferences();
   const [settings, setSettings] = useState<DevonSettings>(defaultSettings);
   const [activeSection, setActiveSection] =
@@ -196,6 +202,10 @@ export function SettingsCommandClient() {
     key: Key,
     value: DevonSettings[Key]
   ) {
+    if (!canManageWorkspace) {
+      setErrorMessage("Only the Owner or an Admin can change workspace settings.");
+      return;
+    }
     setSettings((current) => {
       const next = { ...current, [key]: value };
 
@@ -211,6 +221,7 @@ export function SettingsCommandClient() {
   }
 
   async function saveSettings() {
+    if (!canManageWorkspace) return false;
     try {
       setSaving(true);
       setErrorMessage("");
@@ -248,6 +259,7 @@ export function SettingsCommandClient() {
   }
 
   async function resetSettings() {
+    if (!canManageWorkspace) return;
     if (
       settings.confirmDestructiveTasks &&
       !window.confirm(
@@ -330,7 +342,7 @@ export function SettingsCommandClient() {
               </button>
             );
           })}
-          <Link
+          {canManageAccess ? <Link
             href="/settings/security"
             className="group flex items-center gap-3 rounded-2xl px-3 py-3 text-left text-slate-500 transition hover:bg-white hover:text-[#17171b]"
           >
@@ -346,7 +358,7 @@ export function SettingsCommandClient() {
               </span>
             </span>
             <ChevronRight size={15} className="text-slate-300" />
-          </Link>
+          </Link> : null}
         </nav>
 
         <div className="mt-3 rounded-2xl border border-slate-950/[0.06] bg-white/58 p-4">
@@ -394,7 +406,7 @@ export function SettingsCommandClient() {
               <button
                 type="button"
                 onClick={resetSettings}
-                disabled={!loaded || saving}
+                disabled={!canManageWorkspace || !loaded || saving}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 text-sm font-semibold text-white/68 transition hover:bg-white/10 hover:text-white disabled:opacity-40"
               >
                 <RefreshCcw size={15} />
@@ -403,7 +415,7 @@ export function SettingsCommandClient() {
               <button
                 type="button"
                 onClick={saveSettings}
-                disabled={!loaded || saving || !dirty}
+                disabled={!canManageWorkspace || !loaded || saving || !dirty}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white px-5 text-sm font-semibold text-[#17171b] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 {saved ? <CheckCircle2 size={16} /> : <Save size={16} />}
@@ -415,7 +427,7 @@ export function SettingsCommandClient() {
           <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-white/10 pt-4 text-xs text-white/44">
             <span className="inline-flex items-center gap-1.5">
               <LockKeyhole size={13} />
-              Owner only
+              Owner and Admin
             </span>
             <span aria-hidden>·</span>
             <span>{dirty ? "Unsaved changes" : "Everything is saved"}</span>
@@ -454,6 +466,7 @@ export function SettingsCommandClient() {
             updateField={updateField}
             databaseOnline={databaseOnline}
             recordCount={recordCount}
+            canManageAccess={canManageAccess}
           />
         ) : null}
       </div>
@@ -901,32 +914,34 @@ function DataSection({
   updateField,
   databaseOnline,
   recordCount,
+  canManageAccess,
 }: {
   settings: DevonSettings;
   updateField: UpdateField;
   databaseOnline: boolean | null;
   recordCount: number;
+  canManageAccess: boolean;
 }) {
   const roles = [
     {
       name: "Owner",
-      description: "Everything, including billing and access",
+      description: "Full control, including member roles and security",
       active: true,
     },
     {
-      name: "Assistant",
-      description: "Schedules, drafts, records, and assigned approvals",
-      active: false,
+      name: "Admin",
+      description: "Runs the workspace, settings, and access approvals",
+      active: true,
     },
     {
       name: "Contributor",
-      description: "Assigned projects and content only",
-      active: false,
+      description: "Creates and updates day-to-day workspace content",
+      active: true,
     },
     {
       name: "Viewer",
-      description: "Read-only access to selected modules",
-      active: false,
+      description: "Read-only access to workspace information",
+      active: true,
     },
   ];
 
@@ -1009,7 +1024,7 @@ function DataSection({
         />
       </SettingsPanel>
 
-      <SettingsPanel
+      {canManageAccess ? <SettingsPanel
         eyebrow="Access model"
         title="Members, approvals, and account security."
         description="Review verified account requests, manage active members, change your password, and revoke sessions."
@@ -1052,7 +1067,7 @@ function DataSection({
             </div>
           ))}
         </div>
-      </SettingsPanel>
+      </SettingsPanel> : null}
     </div>
   );
 }

@@ -3,8 +3,10 @@ import { MorrowSecurityCenter } from "@/components/auth/morrow-security-center";
 import { MorrowAccessControl } from "@/components/auth/morrow-access-control";
 import { MorrowServiceStack } from "@/components/auth/morrow-service-stack";
 import { ModuleHeader } from "@/components/layout/module-header";
+import { getCurrentMorrowSession } from "@/lib/morrow-session";
 
-export default function SecurityPage() {
+export default async function SecurityPage() {
+  const session = await getCurrentMorrowSession({ touch: false });
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <section className="mx-auto max-w-[1500px]">
@@ -15,7 +17,7 @@ export default function SecurityPage() {
           icon={ShieldCheck}
         />
         <MorrowSecurityCenter />
-        <MorrowAccessControl />
+        <MorrowAccessControl currentRole={session?.role ?? ""} />
         <MorrowServiceStack />
       </section>
     </main>

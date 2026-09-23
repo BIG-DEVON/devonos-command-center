@@ -5,10 +5,12 @@ import { MorrowOnboarding } from "@/components/onboarding/morrow-onboarding";
 export function AppShell({
   children,
   displayName,
+  role,
   showOnboarding,
 }: {
   children: React.ReactNode;
   displayName: string;
+  role: string;
   showOnboarding: boolean;
 }) {
   return (
@@ -21,10 +23,10 @@ export function AppShell({
       </a>
 
       <div className="flex min-h-screen">
-        <Sidebar displayName={displayName} />
+        <Sidebar displayName={displayName} role={role} />
 
         <div className="min-w-0 flex-1">
-          <TopCommandBar />
+          <TopCommandBar role={role} />
           <div id="main-content" tabIndex={-1} className="pb-24 lg:pb-0">
             {children}
           </div>

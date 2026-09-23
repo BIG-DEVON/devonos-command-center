@@ -7,9 +7,9 @@ export default function EventsPage() {
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <section className="mx-auto max-w-[1500px]">
         <ModuleHeader
-          eyebrow="World · Nigeria · JRB"
-          title="Know what the world is about to celebrate."
-          description="A sourced cultural and institutional radar for global observances, Nigerian holidays, JRB compliance moments, and the stories worth preparing early."
+          eyebrow="Events"
+          title="Events and observances"
+          description="Global observances, Nigerian holidays, JRB dates, and preparation deadlines."
           icon={Globe2}
         />
         <GlobalEventsClient />
