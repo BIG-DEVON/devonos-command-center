@@ -441,7 +441,7 @@ export function GlobalEventsClient() {
 
       <section
         id="event-atlas"
-        className="overflow-hidden rounded-[2.8rem] border border-black/[0.06] bg-[#f5f3ed] shadow-[0_32px_110px_rgba(23,23,27,0.1)]"
+        className="overflow-hidden rounded-[1.8rem] border border-black/[0.06] bg-[#f5f3ed] shadow-[0_24px_80px_rgba(23,23,27,0.08)]"
       >
         <div className="relative overflow-hidden bg-[#101016] px-6 py-8 text-white md:px-9 md:py-10">
           <div className="pointer-events-none absolute inset-0 [background:radial-gradient(circle_at_12%_0%,rgba(109,93,252,0.32),transparent_34%),radial-gradient(circle_at_90%_120%,rgba(216,183,106,0.2),transparent_38%)]" />
@@ -449,22 +449,20 @@ export function GlobalEventsClient() {
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3.5 py-2 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/48">
                 <CalendarDays size={13} className="text-[#d8b76a]" />
-                The {atlasYear} year atlas
+                {atlasYear} calendar
               </div>
-              <h2 className="mt-6 text-4xl font-semibold leading-[0.96] tracking-[-0.055em] sm:text-5xl md:text-6xl">
-                See the whole year
-                <span className="text-white/28"> before it arrives.</span>
+              <h2 className="mt-6 text-3xl font-semibold leading-[0.98] tracking-[-0.05em] sm:text-4xl md:text-5xl">
+                Plan the year
               </h2>
               <p className="mt-5 max-w-2xl text-sm font-semibold leading-7 text-white/44">
-                Every sourced celebration, public holiday, Nigerian moment,
-                JRB deadline, and institutional opportunity—compressed into one
-                calm command surface.
+                Review sourced observances, public holidays, Nigerian events,
+                JRB deadlines, and institutional dates in one calendar.
               </p>
             </div>
             <div className="grid grid-cols-3 gap-2 sm:min-w-[440px]">
               <AtlasMetric value={officialCount} label="Official" />
               <AtlasMetric value={holidayCount} label="Holidays" />
-              <AtlasMetric value={jrbCount} label="JRB signals" />
+              <AtlasMetric value={jrbCount} label="JRB dates" />
             </div>
           </div>
         </div>
@@ -501,10 +499,10 @@ export function GlobalEventsClient() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#6d5dfc]">
-                    Forward horizon
+                    Upcoming events
                   </p>
                   <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">
-                    What arrives next.
+                    Next on the calendar
                   </h3>
                 </div>
                 <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#efefff] text-[#6254e8]">
@@ -549,8 +547,8 @@ export function GlobalEventsClient() {
                 ))
               ) : (
                 <div className="p-6 text-sm font-semibold leading-7 text-slate-400">
-                  The current catalogue has no later moments. Switch to All year
-                  to revisit the complete atlas.
+                  No later events match the current filters. Switch to All year
+                  to review the full calendar.
                 </div>
               )}
             </div>
@@ -587,7 +585,7 @@ export function GlobalEventsClient() {
               {timeFilters.map((item) => <option key={item}>{item}</option>)}
             </select>
             <button onClick={() => setStudioOpen((value) => !value)} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#6d5dfc] px-4 text-xs font-extrabold text-white">
-              <Plus size={15} /> Custom moment
+              <Plus size={15} /> Add event
             </button>
           </div>
         </div>
@@ -603,7 +601,7 @@ export function GlobalEventsClient() {
         {studioOpen ? (
           <motion.section initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="devon-v2-glass rounded-[2.4rem] p-5 md:p-7">
             <div className="flex items-start justify-between gap-4">
-              <div><p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#6d5dfc]">Planning studio</p><h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">Add the moment only you know.</h3></div>
+              <div><p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#6d5dfc]">Custom event</p><h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">Add an event</h3></div>
               <button onClick={() => setStudioOpen(false)} className="text-xs font-bold text-slate-400">Close</button>
             </div>
             <div className="mt-6 grid gap-3 md:grid-cols-2">
@@ -627,7 +625,7 @@ export function GlobalEventsClient() {
       <section className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
         <div className="devon-v2-glass rounded-[2.4rem] p-5 md:p-6">
           <div className="flex items-end justify-between gap-4 border-b border-black/[0.06] pb-5">
-            <div><p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#6d5dfc]">Moment directory</p><h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">{filtered.length} signals</h2></div>
+            <div><p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#6d5dfc]">Event directory</p><h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">{filtered.length} events</h2></div>
             <button onClick={() => void loadEvents()} className="inline-flex items-center gap-2 text-xs font-extrabold text-slate-400"><RefreshCcw size={14} /> Refresh</button>
           </div>
           {!loaded ? (

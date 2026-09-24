@@ -657,43 +657,41 @@ export function CalendarCommandClient() {
     URL.revokeObjectURL(url);
   }
 
-  const nextSignal = items.find((item) => getDaysUntil(item.date) >= 0) ?? null;
+  const nextItem = items.find((item) => getDaysUntil(item.date) >= 0) ?? null;
 
   return (
     <div className="space-y-5">
-      <section className="relative overflow-hidden rounded-[2.7rem] bg-[#0a0a0f] p-7 text-white shadow-[0_38px_110px_rgba(15,15,22,0.22)] md:p-10">
+      <section className="relative overflow-hidden rounded-[1.8rem] bg-[#0a0a0f] p-7 text-white shadow-[0_28px_80px_rgba(15,15,22,0.18)] md:p-9">
         <div className="pointer-events-none absolute inset-0 [background:radial-gradient(circle_at_84%_12%,rgba(109,93,252,0.34),transparent_31%),radial-gradient(circle_at_10%_115%,rgba(216,183,106,0.18),transparent_38%)]" />
         <div className="relative grid gap-8 lg:grid-cols-[1fr_0.72fr] lg:items-end">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/50">
               <Sparkles size={13} className="text-[#d8b76a]" />
-              Morrow temporal intelligence
+              Workspace calendar
             </div>
-            <h2 className="mt-7 max-w-3xl text-5xl font-semibold leading-[0.96] tracking-[-0.06em] md:text-7xl">
-              Your whole world,
-              <br />
-              on one timeline.
+            <h2 className="mt-6 max-w-3xl text-4xl font-semibold leading-[0.98] tracking-[-0.05em] md:text-5xl">
+              One calendar for all work
             </h2>
             <p className="mt-5 max-w-2xl text-sm font-semibold leading-7 text-white/44">
-              World moments, Nigerian holidays, JRB compliance, birthdays,
-              content, approvals, and deadlines—beautifully reconciled.
+              Review observances, JRB deadlines, birthdays, content, approvals,
+              and project dates in one place.
             </p>
           </div>
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.07] p-6 backdrop-blur-2xl">
             <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#d8b76a]">
-              Next on the horizon
+              Next event
             </p>
             <p className="mt-4 text-3xl font-semibold tracking-[-0.04em]">
-              {nextSignal?.title ?? "Calendar is clear"}
+              {nextItem?.title ?? "Calendar is clear"}
             </p>
             <p className="mt-3 text-sm font-semibold text-white/42">
-              {nextSignal
-                ? `${formatDate(nextSignal.date)} · ${dateLabel(nextSignal.date)}`
+              {nextItem
+                ? `${formatDate(nextItem.date)} · ${dateLabel(nextItem.date)}`
                 : "Add a date to begin."}
             </p>
-            {nextSignal ? (
+            {nextItem ? (
               <Link
-                href={nextSignal.href}
+                href={nextItem.href}
                 className="mt-6 inline-flex items-center gap-2 text-xs font-extrabold text-white"
               >
                 Open context <ArrowUpRight size={14} />
@@ -713,10 +711,10 @@ export function CalendarCommandClient() {
 
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/34">
-                Calendar Intelligence
+                Calendar
               </p>
               <h2 className="mt-1 text-xl font-semibold tracking-tight">
-                {items.length} calendar signals
+                {items.length} scheduled items
               </h2>
             </div>
           </div>

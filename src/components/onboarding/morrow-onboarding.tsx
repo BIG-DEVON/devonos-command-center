@@ -17,11 +17,11 @@ import {
 const steps = [
   {
     eyebrow: "Welcome to Morrow",
-    title: "Your command center, without the clutter.",
-    body: "A quick tour will show you the few controls that unlock the entire workspace.",
+    title: "Welcome to your workspace.",
+    body: "This short tour covers search, schedules, notifications, and access.",
     icon: Sparkles,
     accent: "#d8b76a",
-    preview: "Calm work. Clear next move.",
+    preview: "Dashboard · Search · Calendar · Settings",
   },
   {
     eyebrow: "Find anything",
@@ -40,7 +40,7 @@ const steps = [
     preview: "Today · Upcoming · Spotlight",
   },
   {
-    eyebrow: "Delivery, your way",
+    eyebrow: "Notifications",
     title: "In-app, email, phone and push.",
     body: "Choose channels and quiet hours in Settings. Security controls members, sessions, recovery and every connected provider.",
     icon: BellRing,

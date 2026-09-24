@@ -223,7 +223,7 @@ export function AutopilotTaskQueueClient() {
     } catch (error) {
       console.error("Failed to generate Autopilot tasks:", error);
       setErrorMessage(
-        "Morrow could not generate tasks from the current signals."
+        "Morrow could not generate tasks from the current workspace items."
       );
     } finally {
       setGenerating(false);
@@ -301,7 +301,7 @@ export function AutopilotTaskQueueClient() {
             </h2>
 
             <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 text-slate-500">
-              Morrow reads your Autopilot signals and creates a practical task
+              Morrow reviews current workspace items and creates a practical task
               queue so your work stops living inside your head.
             </p>
           </div>
@@ -368,7 +368,7 @@ export function AutopilotTaskQueueClient() {
           <EmptyState
             icon={ShieldCheck}
             title="No active Autopilot tasks"
-            text="Generate tasks from the current Autopilot signals when you are ready."
+            text="Generate tasks from current workspace items when you are ready."
           />
         ) : (
           activeTasks.map((task, index) => (

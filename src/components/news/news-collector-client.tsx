@@ -124,7 +124,7 @@ function buildSingleNewsBrief(item: NewsItem | null) {
 
 function buildDailyBrief(items: NewsItem[]) {
   if (items.length === 0) {
-    return "Add news items to generate a daily intelligence brief.";
+    return "Add news items to generate a daily brief.";
   }
 
   const highItems = items.filter((item) => item.relevance === "High");
@@ -134,14 +134,14 @@ function buildDailyBrief(items: NewsItem[]) {
   const orderedItems = [...highItems, ...mediumItems, ...lowItems];
 
   return [
-    "MORROW DAILY NEWS INTELLIGENCE BRIEF",
+    "MORROW DAILY NEWS BRIEF",
     "",
     `Generated: ${formatDate(new Date().toISOString())}`,
-    `Total Signals: ${items.length}`,
+    `Total Articles: ${items.length}`,
     `High Relevance: ${highItems.length}`,
     "",
-    "Executive Summary:",
-    "The following news signals have been collected for review, monitoring, and possible communication action.",
+    "Summary:",
+    "The following news items have been collected for review, monitoring, and possible communication action.",
     "",
     ...orderedItems.flatMap((item, index) => [
       `${index + 1}. ${item.headline}`,
@@ -392,7 +392,7 @@ export function NewsCollectorClient() {
               </div>
 
               <h2 className="text-2xl font-semibold tracking-tight text-[#0B0D12]">
-                Add a news signal
+                Add a news article
               </h2>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
@@ -510,10 +510,10 @@ export function NewsCollectorClient() {
 
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/34">
-                Intelligence Brief
+                Daily brief
               </p>
               <h2 className="mt-1 text-xl font-semibold tracking-tight">
-                {items.length} database signals
+                {items.length} saved articles
               </h2>
             </div>
           </div>
@@ -538,7 +538,7 @@ export function NewsCollectorClient() {
       <div className="space-y-5">
         <div className="grid gap-3 md:grid-cols-4">
           <MetricCard
-            title="Signals"
+            title="Articles"
             value={items.length}
             sub="Database records"
             icon={Radio}
@@ -567,11 +567,11 @@ export function NewsCollectorClient() {
           <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <h2 className="text-xl font-semibold tracking-tight text-[#0B0D12]">
-                News Signal Directory
+                News directory
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
                 Search, preview, classify, and delete database-backed news
-                signals.
+                articles.
               </p>
             </div>
 
@@ -583,7 +583,7 @@ export function NewsCollectorClient() {
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search news signals..."
+                placeholder="Search news articles..."
                 className="w-full rounded-2xl border border-slate-950/[0.08] bg-white/80 py-3 pl-11 pr-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-[#5B5DF5]/30 focus:bg-white focus:ring-4 focus:ring-[#5B5DF5]/10"
               />
             </div>
@@ -592,14 +592,14 @@ export function NewsCollectorClient() {
           {!loaded ? (
             <EmptyState
               icon={RefreshCcw}
-              title="Loading news signals"
+              title="Loading news articles"
               text="Fetching records from the database."
             />
           ) : filteredItems.length === 0 ? (
             <EmptyState
               icon={Newspaper}
-              title="No news signals found"
-              text="Add your first news item to begin building your intelligence brief."
+              title="No news articles found"
+              text="Add your first news item to begin building the daily brief."
             />
           ) : (
             <div className="space-y-3">
@@ -710,7 +710,7 @@ export function NewsCollectorClient() {
             <div className="mb-5 flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-semibold tracking-tight text-[#0B0D12]">
-                  Selected Signal
+                  Selected article
                 </h2>
                 <p className="mt-1 text-sm text-slate-400">
                   Copy one selected news brief.
@@ -741,7 +741,7 @@ export function NewsCollectorClient() {
                   Daily Brief
                 </h2>
                 <p className="mt-1 text-sm text-slate-400">
-                  Copy the full generated intelligence brief.
+                  Copy the full generated daily brief.
                 </p>
               </div>
 

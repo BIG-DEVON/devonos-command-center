@@ -93,7 +93,7 @@ function formatSigned(value: number) {
 
 function buildBrief(report: ExecutiveReport) {
   const lines = [
-    "MORROW · EXECUTIVE INTELLIGENCE BRIEF",
+    "MORROW · WORKSPACE REPORT",
     `${report.rangeLabel} · Generated ${formatMoment(report.generatedAt, true)}`,
     "",
     `${report.score}/100 · ${report.signal}`,
@@ -117,7 +117,7 @@ function buildBrief(report: ExecutiveReport) {
           (item) =>
             `${item.module}: ${item.title} — ${item.detail} [${item.status}]`
         )
-      : ["No urgent evidence signal is currently visible."]),
+      : ["No urgent source record needs attention."]),
     "",
     report.methodology,
   ];
@@ -166,7 +166,7 @@ export function ReportsCommandClient() {
         );
       });
       if (quiet) {
-        setNotice({ tone: "success", message: "Command picture refreshed." });
+        setNotice({ tone: "success", message: "Report refreshed." });
       }
     } catch (error) {
       setNotice({
@@ -229,7 +229,7 @@ export function ReportsCommandClient() {
       setSelectedSnapshotId(payload.snapshot.id);
       setNotice({
         tone: "success",
-        message: "Immutable executive snapshot preserved.",
+        message: "Report snapshot saved.",
       });
     } catch (error) {
       setNotice({
@@ -247,7 +247,7 @@ export function ReportsCommandClient() {
   async function copyBrief() {
     if (!data) return;
     await navigator.clipboard.writeText(buildBrief(data.live));
-    setNotice({ tone: "success", message: "Executive brief copied." });
+    setNotice({ tone: "success", message: "Report summary copied." });
   }
 
   function downloadBrief() {
@@ -265,7 +265,7 @@ export function ReportsCommandClient() {
     anchor.click();
     anchor.remove();
     URL.revokeObjectURL(url);
-    setNotice({ tone: "success", message: "Executive brief downloaded." });
+    setNotice({ tone: "success", message: "Report summary downloaded." });
   }
 
   if (loading && !data) {
@@ -277,7 +277,7 @@ export function ReportsCommandClient() {
       <div className="devon-glass rounded-[2rem] p-8 text-center">
         <CircleAlert className="mx-auto text-rose-500" size={24} />
         <h2 className="mt-4 text-xl font-semibold text-[#0B0D12]">
-          The command picture is unavailable.
+          The report is unavailable.
         </h2>
         <p className="mt-2 text-sm text-slate-500">
           Your saved records are safe. Ask Morrow to try the read again.
@@ -310,7 +310,7 @@ export function ReportsCommandClient() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/58">
                   <Activity size={13} className="text-[#A99EFF]" />
-                  Live command picture
+                  Live workspace report
                 </span>
                 <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.08] px-3.5 py-2 text-[11px] font-semibold text-emerald-200">
                   <ShieldCheck size={13} />
@@ -322,9 +322,7 @@ export function ReportsCommandClient() {
                 {live.rangeLabel} · refreshed {formatMoment(live.generatedAt, true)}
               </p>
               <h2 className="mt-3 max-w-3xl text-4xl font-semibold tracking-[-0.055em] sm:text-5xl lg:text-[4rem] lg:leading-[0.98]">
-                The truth, before
-                <br />
-                the meeting starts.
+                Workspace status
               </h2>
               <p className="mt-6 max-w-2xl text-base leading-7 text-white/55">
                 {live.summary}
@@ -342,7 +340,7 @@ export function ReportsCommandClient() {
                 ) : (
                   <Save size={16} />
                 )}
-                Preserve snapshot
+                Save snapshot
               </button>
               <button
                 onClick={() => void loadReport(range, true)}
@@ -353,7 +351,7 @@ export function ReportsCommandClient() {
                   size={16}
                   className={refreshing ? "animate-spin" : ""}
                 />
-                Refresh truth
+                Refresh report
               </button>
               <button
                 onClick={downloadBrief}
@@ -369,7 +367,7 @@ export function ReportsCommandClient() {
             <div className="flex items-start justify-between gap-5">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.23em] text-white/40">
-                  Command health
+                  Workspace health
                 </p>
                 <p className="mt-2 text-xl font-semibold">{live.signal}</p>
               </div>
@@ -426,9 +424,9 @@ export function ReportsCommandClient() {
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
         <div className="devon-glass min-w-0 rounded-[2.2rem] p-6 sm:p-7">
           <SectionHeading
-            eyebrow="Operational map"
-            title="Every command surface, one read."
-            detail="Current totals and the clearest completion or risk signal in each module."
+            eyebrow="Module status"
+            title="Workspace activity by module"
+            detail="Current totals, completion status, and items that need attention."
             icon={Gauge}
           />
           <ModuleGrid metrics={live.metrics} />
@@ -436,9 +434,9 @@ export function ReportsCommandClient() {
 
         <div className="devon-glass min-w-0 rounded-[2.2rem] p-6 sm:p-7">
           <SectionHeading
-            eyebrow="Movement"
+            eyebrow="Comparison"
             title={
-              selectedSnapshot ? "What changed since the last read." : "A baseline worth keeping."
+              selectedSnapshot ? "Changes since the saved snapshot" : "Save a baseline"
             }
             detail={
               selectedSnapshot
@@ -446,7 +444,7 @@ export function ReportsCommandClient() {
                     selectedSnapshot.createdAt,
                     true
                   )}.`
-                : "Preserve a snapshot to unlock exact, point-in-time comparison."
+                : "Save a snapshot to compare this report with a future one."
             }
             icon={TrendingUp}
           />
@@ -479,7 +477,7 @@ export function ReportsCommandClient() {
             >
               <FileClock size={28} className="text-[#7466F5]" />
               <span className="mt-4 text-base font-semibold text-[#0B0D12]">
-                Preserve the first baseline
+                Save the first baseline
               </span>
               <span className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
                 Future reports will show precise movement against this moment.
@@ -492,9 +490,9 @@ export function ReportsCommandClient() {
       <section className="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <div className="devon-glass min-w-0 rounded-[2.2rem] p-6 sm:p-7">
           <SectionHeading
-            eyebrow="Decision queue"
-            title="What deserves your attention."
-            detail="Rules-based priorities derived directly from status, due dates, and readiness."
+            eyebrow="Action items"
+            title="Items needing attention"
+            detail="Priorities based on status, due dates, and readiness."
             icon={Workflow}
           />
           <div className="space-y-3">
@@ -506,9 +504,9 @@ export function ReportsCommandClient() {
 
         <div className="devon-glass min-w-0 rounded-[2.2rem] p-6 sm:p-7">
           <SectionHeading
-            eyebrow="Evidence ledger"
-            title="Every conclusion can be opened."
-            detail="No black box: follow a signal back to the Morrow record behind it."
+            eyebrow="Source records"
+            title="Open the records behind this report"
+            detail="Each item links back to its source in Morrow."
             icon={ShieldCheck}
           />
           <div className="max-h-[34rem] space-y-2.5 overflow-y-auto pr-1">
@@ -520,11 +518,10 @@ export function ReportsCommandClient() {
               <div className="rounded-[1.7rem] border border-emerald-200 bg-emerald-50/70 p-6">
                 <CheckCircle2 className="text-emerald-600" size={22} />
                 <p className="mt-4 font-semibold text-emerald-950">
-                  No urgent evidence signal.
+                  No urgent records.
                 </p>
                 <p className="mt-2 text-sm leading-6 text-emerald-800/70">
-                  Morrow found no overdue or high-pressure record in the current
-                  operational picture.
+                  No overdue or high-priority record needs attention in this report.
                 </p>
               </div>
             )}
@@ -536,9 +533,9 @@ export function ReportsCommandClient() {
         <div className="devon-glass min-w-0 rounded-[2.2rem] p-6 sm:p-7">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <SectionHeading
-              eyebrow="Executive brief"
-              title="Ready to carry into the room."
-              detail="A concise decision document built from the same verified command state."
+              eyebrow="Report summary"
+              title="A concise summary for review"
+              detail="Built from the current saved workspace records."
               icon={FileText}
               compact
             />
@@ -555,7 +552,7 @@ export function ReportsCommandClient() {
             <div className="flex items-center justify-between gap-4 border-b border-slate-950/[0.07] pb-4">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#7466F5]">
-                  Morrow executive intelligence
+                  Workspace report
                 </p>
                 <p className="mt-1 text-sm font-semibold text-[#0B0D12]">
                   {live.rangeLabel}
@@ -592,8 +589,8 @@ export function ReportsCommandClient() {
 
         <div className="devon-glass min-w-0 rounded-[2.2rem] p-6 sm:p-7">
           <SectionHeading
-            eyebrow="Snapshot vault"
-            title="A memory the dashboard cannot rewrite."
+            eyebrow="Saved snapshots"
+            title="Point-in-time records"
             detail={`${snapshots.length} immutable point-in-time ${
               snapshots.length === 1 ? "record" : "records"
             } preserved.`}
@@ -647,7 +644,7 @@ export function ReportsCommandClient() {
                   No snapshots yet
                 </p>
                 <p className="mt-1 text-xs leading-5 text-slate-400">
-                  Preserve today’s command picture to start a defensible history.
+                  Save today’s report to begin tracking changes over time.
                 </p>
               </div>
             )}
@@ -1097,7 +1094,7 @@ function ReportLoading() {
             Reading the command
           </p>
           <p className="mt-3 text-lg font-semibold">
-            Building a defensible picture…
+            Building the report…
           </p>
         </div>
       </div>

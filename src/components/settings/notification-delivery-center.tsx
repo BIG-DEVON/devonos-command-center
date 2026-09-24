@@ -71,7 +71,7 @@ const channelMeta = {
   },
   sms: {
     label: "Phone SMS",
-    description: "Short, urgent signals for deadlines that cannot wait.",
+    description: "Short, urgent alerts for deadlines that cannot wait.",
     icon: Smartphone,
     gradient: "from-[#dff8f2] via-[#effbf8] to-white",
     accent: "text-[#087b66]",
@@ -257,7 +257,7 @@ export function NotificationDeliveryCenter({
 
   return (
     <div className="space-y-5">
-      <section className="relative overflow-hidden rounded-[2.35rem] bg-[#111116] p-5 text-white shadow-[0_32px_90px_rgba(19,18,31,0.22)] sm:p-7">
+      <section className="relative overflow-hidden rounded-[1.8rem] bg-[#111116] p-5 text-white shadow-[0_24px_70px_rgba(19,18,31,0.18)] sm:p-7">
         <div className="pointer-events-none absolute inset-0 opacity-80 [background:radial-gradient(circle_at_80%_0%,rgba(117,104,255,.38),transparent_32%),radial-gradient(circle_at_5%_100%,rgba(223,186,97,.22),transparent_35%)]" />
         <div className="pointer-events-none absolute -right-24 top-0 h-80 w-80 rounded-full border border-white/[0.07]" />
         <div className="pointer-events-none absolute -right-4 top-20 h-44 w-44 rounded-full border border-white/[0.07]" />
@@ -266,13 +266,13 @@ export function NotificationDeliveryCenter({
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.07] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.19em] text-white/55">
               <Radio size={12} className="text-[#a99fff]" />
-              Delivery constellation
+              Delivery channels
             </div>
             <h3 className="mt-5 max-w-2xl text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">
-              The right signal. The right screen. The right moment.
+              Email, SMS, and push notifications
             </h3>
             <p className="mt-4 max-w-xl text-sm leading-7 text-white/48">
-              Every external alert is recorded, permission-aware, protected by quiet hours, and retried safely when a provider is temporarily unavailable.
+              External alerts follow your permissions, severity threshold, and quiet hours. Each delivery is recorded for support and audit.
             </p>
           </div>
 
@@ -280,7 +280,7 @@ export function NotificationDeliveryCenter({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/38">
-                  Network readiness
+                  Channel status
                 </p>
                 <p className="mt-2 text-2xl font-semibold">{loading ? "—" : `${readyCount} / 3`}</p>
               </div>
@@ -462,7 +462,7 @@ export function NotificationDeliveryCenter({
               ))}
             </div>
             <p className="mt-4 text-[11px] leading-5 text-slate-400">
-              Morrow checks birthdays and major events up to 14 days ahead, then escalates at 7, 3, and 1 day before the final day-of signal. Your daily sweep runs at {status?.automation.time ?? settings.dailyBriefTime} ({(status?.automation.timezone ?? settings.timezone).replace("_", " ")}).
+              Morrow checks birthdays and major events up to 14 days ahead, then reminds you 7, 3, and 1 day before the event and again on the day. Your daily check runs at {status?.automation.time ?? settings.dailyBriefTime} ({(status?.automation.timezone ?? settings.timezone).replace("_", " ")}).
             </p>
             <div className={`mt-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-bold ${status?.automation.secured && status?.automation.enabled ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${status?.automation.secured && status?.automation.enabled ? "bg-emerald-500" : "bg-amber-500"}`} />
@@ -481,7 +481,7 @@ export function NotificationDeliveryCenter({
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/40">Email preview</span>
             </div>
             <div className="p-5">
-              <p className="text-[9px] font-extrabold uppercase tracking-[0.17em] text-slate-400">Birthday · advance signal</p>
+              <p className="text-[9px] font-extrabold uppercase tracking-[0.17em] text-slate-400">Birthday · advance reminder</p>
               <h4 className="mt-2 text-lg font-semibold tracking-tight text-[#17171b]">A birthday is coming up.</h4>
               <div className="mt-3 rounded-2xl border border-slate-950/[0.06] bg-[#f7f7fa] p-3.5 text-[11px] leading-5 text-slate-500">
                 Review the message and final visual before the day gets busy.
@@ -578,8 +578,8 @@ export function NotificationDeliveryCenter({
       <section className="devon-glass rounded-[2.25rem] p-5 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.19em] text-slate-400">Delivery ledger</p>
-            <h3 className="mt-2 text-xl font-semibold tracking-tight text-[#17171b]">Every signal leaves a receipt.</h3>
+            <p className="text-[10px] font-bold uppercase tracking-[0.19em] text-slate-400">Delivery history</p>
+            <h3 className="mt-2 text-xl font-semibold tracking-tight text-[#17171b]">Sent notification records</h3>
           </div>
           <Clock3 size={18} className="text-slate-300" />
         </div>
@@ -611,7 +611,7 @@ export function NotificationDeliveryCenter({
         ) : (
           <div className="mt-5 rounded-[1.6rem] border border-dashed border-slate-300/70 p-7 text-center">
             <Radio size={20} className="mx-auto text-slate-300" />
-            <p className="mt-3 text-sm font-semibold text-slate-500">No external signals yet.</p>
+            <p className="mt-3 text-sm font-semibold text-slate-500">No external notifications yet.</p>
             <p className="mt-1 text-xs text-slate-400">Your first test or live alert will appear here with a real delivery status.</p>
           </div>
         )}

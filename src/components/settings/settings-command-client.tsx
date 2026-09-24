@@ -616,8 +616,8 @@ function AlertsSection({
     <div className="space-y-5">
       <SettingsPanel
         eyebrow="Sound"
-        title="A quiet, premium signal."
-        description="Morrow uses one short chime for important confirmations and alerts—never constant button noise."
+        title="Notification sound"
+        description="Use one short chime for important confirmations and alerts."
         icon={settings.interfaceSounds ? Volume2 : VolumeX}
       >
         <PreferenceRow
@@ -669,8 +669,8 @@ function AlertsSection({
 
       <SettingsPanel
         eyebrow="In-app center"
-        title="Keep the command space quietly aware."
-        description="Deadlines, daily briefs, birthdays, operational alerts, and delivery receipts stay visible inside Morrow."
+        title="In-app notifications"
+        description="Show deadlines, daily briefs, birthdays, alerts, and delivery receipts inside Morrow."
         icon={Bell}
       >
         <PreferenceRow
@@ -705,9 +705,9 @@ function ScheduleSection({
   return (
     <div className="space-y-5">
       <SettingsPanel
-        eyebrow="Daily rhythm"
-        title="Set the operating clock."
-        description="Calendar dates, daily briefs, quiet hours, and scheduled intelligence use this timezone."
+        eyebrow="Schedule"
+        title="Schedule and timezone"
+        description="Calendar dates, daily briefs, quiet hours, and scheduled jobs use this timezone."
         icon={Clock3}
       >
         <div className="grid gap-4 md:grid-cols-2">
@@ -968,10 +968,10 @@ function DataSection({
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-[#17171b]">
-                    Local encrypted boundary
+                    Private workspace database
                   </p>
                   <p className="mt-1 text-xs text-slate-400">
-                    Hosted backups arrive in production
+                    Backups use the production database
                   </p>
                 </div>
               </div>
@@ -985,7 +985,7 @@ function DataSection({
 
         <SettingsPanel
           eyebrow="Backup"
-          title="Own a copy of your data."
+          title="Download workspace data"
           description="Download every saved module as one readable JSON archive."
           icon={Download}
         >

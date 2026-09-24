@@ -117,8 +117,8 @@ function healthConfig(health: AutopilotBriefResponse["health"] | undefined) {
 
   return {
     label: "Stable",
-    title: "The command center is calm",
-    text: "No heavy pressure detected. This is a good time to prepare ahead.",
+    title: "No urgent items",
+    text: "Nothing needs immediate attention. Review upcoming work when ready.",
     icon: ShieldCheck,
     chip: "border-cyan-100 bg-cyan-50 text-cyan-600",
     gradient: "from-cyan-500 to-blue-600",
@@ -221,7 +221,7 @@ export function AutopilotActionCenterClient() {
     () => [
       {
         title: "Create Social Draft",
-        text: "Morrow turns today’s command signals into a Social Studio draft you can review and post later.",
+        text: "Create a Social Studio draft from today’s workspace updates for review before publishing.",
         icon: Send,
         action: "create_social_draft",
         href: "/social",
@@ -229,7 +229,7 @@ export function AutopilotActionCenterClient() {
       },
       {
         title: "Create AI Review Draft",
-        text: "Morrow creates an AI Studio review draft from the command brief for executive-style summarization.",
+        text: "Create a Writing Studio draft from the daily brief for review and editing.",
         icon: Bot,
         action: "create_ai_review_draft",
         href: "/ai",
@@ -296,7 +296,7 @@ export function AutopilotActionCenterClient() {
             </div>
 
             <h1 className="max-w-3xl text-4xl font-semibold leading-[0.95] tracking-[-0.06em] text-white md:text-6xl">
-              Turn signals into next steps.
+              Turn workspace updates into tasks
             </h1>
 
             <p className="mt-6 max-w-2xl text-base font-medium leading-8 text-white/62 md:text-lg">
@@ -305,7 +305,7 @@ export function AutopilotActionCenterClient() {
             </p>
 
             <div className="mt-8 grid gap-3 md:grid-cols-4">
-              <HeroMetric value={counts.signals} label="Signals" />
+              <HeroMetric value={counts.signals} label="Items" />
               <HeroMetric value={counts.high} label="High" />
               <HeroMetric value={counts.medium} label="Medium" />
               <HeroMetric value={counts.approvals} label="Approvals" />
@@ -453,7 +453,7 @@ export function AutopilotActionCenterClient() {
         <div className="devon-v2-glass rounded-[2.5rem] p-6">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <p className="devon-v2-label text-blue-600">Signal Queue</p>
+              <p className="devon-v2-label text-blue-600">Priority queue</p>
               <h2 className="mt-2 text-3xl text-[#07111f]">
                 What Morrow found
               </h2>
@@ -465,7 +465,7 @@ export function AutopilotActionCenterClient() {
           {!loaded ? (
             <EmptyState
               icon={RefreshCcw}
-              title="Loading signals"
+              title="Loading priority items"
               text="Morrow is reading your database."
             />
           ) : data?.topSignals.length ? (

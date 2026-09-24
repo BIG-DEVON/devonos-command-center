@@ -227,10 +227,10 @@ export function AutomationControlClient() {
           <div className="max-w-3xl">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.18em] text-blue-600">
               <CalendarClock size={14} />
-              Daily command sweep
+              Daily workspace check
             </div>
             <h2 className="text-3xl tracking-[-0.04em] text-[#07111f] md:text-4xl">
-              Your whole command center, checked in one routine.
+              Check the workspace on a schedule
             </h2>
             <p className="mt-3 max-w-2xl text-sm font-semibold leading-7 text-slate-500">
               Check deadlines, projects, birthdays, approvals, scheduled
@@ -250,7 +250,7 @@ export function AutomationControlClient() {
             ) : (
               <Play size={17} fill="currentColor" />
             )}
-            {running ? "Checking your command center…" : "Run command sweep"}
+            {running ? "Checking the workspace…" : "Run workspace check"}
           </button>
         </div>
 
@@ -290,8 +290,8 @@ export function AutomationControlClient() {
               }`}
               aria-label={
                 schedule?.enabled
-                  ? "Pause daily command sweep"
-                  : "Enable daily command sweep"
+                  ? "Pause daily workspace check"
+                  : "Enable daily workspace check"
               }
               aria-pressed={schedule?.enabled}
             >
@@ -464,7 +464,7 @@ export function AutomationControlClient() {
               <div className="rounded-[1.6rem] border border-dashed border-slate-300 bg-white/45 p-6 text-center">
                 <Newspaper size={22} className="mx-auto text-blue-500" />
                 <p className="mt-3 text-sm font-extrabold text-slate-700">
-                  No command sweep yet
+                  No workspace check yet
                 </p>
                 <p className="mt-1 text-xs font-semibold text-slate-500">
                   Run it once to create the first verified history record.
@@ -477,7 +477,7 @@ export function AutomationControlClient() {
             href="/news"
             className="mt-5 inline-flex items-center gap-2 text-xs font-extrabold text-blue-600 transition hover:text-blue-800"
           >
-            Open News Intelligence
+            Open News Intel
             <ArrowUpRight size={14} />
           </Link>
         </div>

@@ -111,7 +111,7 @@ function healthCopy(health: AutopilotResponse["health"] | undefined) {
     return {
       label: "Needs action",
       title: "A few items need an immediate decision.",
-      text: "Critical signals are at the top of your queue.",
+      text: "Critical items are at the top of your queue.",
       icon: AlertTriangle,
       dot: "bg-rose-500",
       tone: "text-rose-600 bg-rose-50",
@@ -352,7 +352,7 @@ export function DashboardCommandClient() {
                 Today at a glance
               </p>
               <h3 className="mt-2 text-2xl font-semibold tracking-[-0.045em] text-[#242429]">
-                Signal readout
+                Workspace summary
               </h3>
             </div>
             <span className={`rounded-full p-2.5 ${health.tone}`}>
@@ -361,7 +361,7 @@ export function DashboardCommandClient() {
           </div>
 
           <div className="mt-7 grid grid-cols-2 gap-px overflow-hidden rounded-[18px] border border-black/[0.055] bg-black/[0.055]">
-            <Metric value={counts.signals} label="All signals" />
+            <Metric value={counts.signals} label="All items" />
             <Metric value={counts.critical} label="Critical" />
             <Metric value={counts.high} label="High priority" />
             <Metric value={counts.medium} label="Medium" />
@@ -466,7 +466,7 @@ export function DashboardCommandClient() {
           <div className="devon-scrollbar mt-5 max-h-[510px] overflow-auto rounded-[18px] bg-[#f6f6f8] p-4 sm:p-5">
             <pre className="whitespace-pre-wrap font-sans text-[13px] leading-6 text-[#5f5f68]">
               {data?.briefText ??
-                "Your daily brief is being prepared from the latest workspace signals."}
+                "Your daily brief is being prepared from the latest workspace updates."}
             </pre>
           </div>
         </div>
