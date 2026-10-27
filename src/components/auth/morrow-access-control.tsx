@@ -57,14 +57,21 @@ function compactDate(value: string | null) {
 export function MorrowAccessControl({ currentRole }: { currentRole: string }) {
   const [data, setData] = useState<AccessPayload | null>(null);
   const [loading, setLoading] = useState(true);
-  const [workingId, setWorkingId] = useState("");
+  const [working, setWorking] = useState<{
+    id: string;
+    action: "approve" | "reject" | "update";
+  } | null>(null);
   const [requestRoles, setRequestRoles] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
-  async function load() {
+  async function load(options: { resetFeedback?: boolean } = {}) {
     try {
       setLoading(true);
+      if (options.resetFeedback) {
+        setNotice("");
+        setError("");
+      }
       const response = await fetch("/api/auth/access-requests", {
         cache: "no-store",
       });
@@ -90,7 +97,7 @@ export function MorrowAccessControl({ currentRole }: { currentRole: string }) {
 
   async function review(id: string, action: "approve" | "reject") {
     try {
-      setWorkingId(id);
+      setWorking({ id, action });
       setNotice("");
       setError("");
       const response = await fetch(`/api/auth/access-requests/${id}`, {
@@ -98,7 +105,10 @@ export function MorrowAccessControl({ currentRole }: { currentRole: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action,
-          role: requestRoles[id] ?? "MEMBER",
+          role:
+            requestRoles[id] ??
+            data?.requests.find((request) => request.id === id)?.requestedRole ??
+            "MEMBER",
         }),
       });
       const payload = (await response.json()) as {
@@ -117,7 +127,7 @@ export function MorrowAccessControl({ currentRole }: { currentRole: string }) {
           : "That review could not be completed."
       );
     } finally {
-      setWorkingId("");
+      setWorking(null);
     }
   }
 
@@ -126,7 +136,7 @@ export function MorrowAccessControl({ currentRole }: { currentRole: string }) {
     change: { role?: string; status?: string }
   ) {
     try {
-      setWorkingId(id);
+      setWorking({ id, action: "update" });
       setNotice("");
       setError("");
       const response = await fetch(`/api/auth/members/${id}`, {
@@ -150,7 +160,7 @@ export function MorrowAccessControl({ currentRole }: { currentRole: string }) {
           : "That member could not be updated."
       );
     } finally {
-      setWorkingId("");
+      setWorking(null);
     }
   }
 
@@ -173,7 +183,7 @@ export function MorrowAccessControl({ currentRole }: { currentRole: string }) {
         </div>
 
         {notice || error ? (
-          <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className={`mt-5 rounded-2xl border px-4 py-3 text-xs font-bold ${error ? "border-red-100 bg-red-50 text-red-700" : "border-emerald-100 bg-emerald-50 text-emerald-700"}`}>
+          <motion.p role="status" aria-live="polite" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className={`mt-5 rounded-2xl border px-4 py-3 text-xs font-bold ${error ? "border-red-100 bg-red-50 text-red-700" : "border-emerald-100 bg-emerald-50 text-emerald-700"}`}>
             {error || notice}
           </motion.p>
         ) : null}
@@ -200,7 +210,7 @@ export function MorrowAccessControl({ currentRole }: { currentRole: string }) {
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-2">
                   <select
-                    value={requestRoles[request.id] ?? "MEMBER"}
+                    value={requestRoles[request.id] ?? request.requestedRole}
                     onChange={(event) =>
                       setRequestRoles((current) => ({
                         ...current,
@@ -213,8 +223,8 @@ export function MorrowAccessControl({ currentRole }: { currentRole: string }) {
                     <option value="MEMBER">Contributor</option>
                     <option value="VIEWER">Viewer</option>
                   </select>
-                  <button type="button" disabled={Boolean(workingId)} onClick={() => void review(request.id, "reject")} className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-black/[0.07] bg-white px-3 text-[10px] font-extrabold text-slate-500 transition hover:text-red-600 disabled:opacity-45"><X size={13} />Decline</button>
-                  <button type="button" disabled={Boolean(workingId)} onClick={() => void review(request.id, "approve")} className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#17171b] px-3 text-[10px] font-extrabold text-white transition hover:-translate-y-0.5 disabled:opacity-45">{workingId === request.id ? <LoaderCircle size={13} className="animate-spin" /> : <Check size={13} />}Approve</button>
+                  <button type="button" disabled={Boolean(working)} aria-busy={working?.id === request.id && working.action === "reject"} onClick={() => void review(request.id, "reject")} className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-black/[0.07] bg-white px-3 text-[10px] font-extrabold text-slate-500 transition hover:text-red-600 disabled:opacity-45">{working?.id === request.id && working.action === "reject" ? <LoaderCircle size={13} className="animate-spin" /> : <X size={13} />}Decline</button>
+                  <button type="button" disabled={Boolean(working)} aria-busy={working?.id === request.id && working.action === "approve"} onClick={() => void review(request.id, "approve")} className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#17171b] px-3 text-[10px] font-extrabold text-white transition hover:-translate-y-0.5 disabled:opacity-45">{working?.id === request.id && working.action === "approve" ? <LoaderCircle size={13} className="animate-spin" /> : <Check size={13} />}{working?.id === request.id && working.action === "approve" ? "Approving" : "Approve"}</button>
                 </div>
               </div>
             </article>
@@ -228,7 +238,7 @@ export function MorrowAccessControl({ currentRole }: { currentRole: string }) {
             <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#9f94ff]">Member directory</p>
             <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em]">{users.length} account{users.length === 1 ? "" : "s"}</h2>
           </div>
-          <button type="button" onClick={() => void load()} disabled={loading} aria-label="Refresh members" className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.07] text-white/55 transition hover:text-white"><RefreshCw size={16} className={loading ? "animate-spin" : ""} /></button>
+          <button type="button" onClick={() => void load({ resetFeedback: true })} disabled={loading} aria-label="Refresh members" className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.07] text-white/55 transition hover:text-white"><RefreshCw size={16} className={loading ? "animate-spin" : ""} /></button>
         </div>
 
         <div className="mt-6 space-y-2.5">
@@ -250,7 +260,7 @@ export function MorrowAccessControl({ currentRole }: { currentRole: string }) {
                     onChange={(event) =>
                       void updateMember(user.id, { role: event.target.value })
                     }
-                    disabled={Boolean(workingId)}
+                    disabled={Boolean(working)}
                     className="h-9 min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.07] px-3 text-[10px] font-bold text-white outline-none disabled:opacity-45"
                     aria-label={`Change role for ${user.displayName}`}
                   >
@@ -260,7 +270,7 @@ export function MorrowAccessControl({ currentRole }: { currentRole: string }) {
                   </select>
                   <button
                     type="button"
-                    disabled={Boolean(workingId)}
+                    disabled={Boolean(working)}
                     onClick={() =>
                       void updateMember(user.id, {
                         status: user.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE",

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentMorrowSession } from "@/lib/morrow-session";
+import {
+  getCurrentMorrowSession,
+  normalizeMorrowEmail,
+} from "@/lib/morrow-session";
 import { createMorrowSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isMorrowRole } from "@/lib/morrow-permissions";
 
@@ -40,9 +43,9 @@ export async function PATCH(
     const accessRequest = await prisma.morrowAccessRequest.findUnique({
       where: { id },
     });
-    if (!accessRequest || accessRequest.status !== "PENDING") {
+    if (!accessRequest) {
       return NextResponse.json(
-        { ok: false, message: "That pending request no longer exists." },
+        { ok: false, message: "That access request no longer exists." },
         { status: 404 }
       );
     }
@@ -61,6 +64,38 @@ export async function PATCH(
     const user = await prisma.morrowUser.findUnique({
       where: { email: accessRequest.email },
     });
+
+    if (
+      action === "approve" &&
+      accessRequest.status === "APPROVED" &&
+      user?.status === "ACTIVE"
+    ) {
+      return NextResponse.json({
+        ok: true,
+        message: "This account is already approved and can sign in.",
+      });
+    }
+
+    if (action === "reject" && accessRequest.status === "REJECTED") {
+      return NextResponse.json({
+        ok: true,
+        message: "This access request is already declined.",
+      });
+    }
+
+    if (accessRequest.status !== "PENDING") {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            accessRequest.status === "APPROVED"
+              ? "This account is already approved. Suspend it from the member directory if needed."
+              : "This access request has already been reviewed.",
+        },
+        { status: 409 }
+      );
+    }
+
     if (!user?.supabaseUserId) {
       return NextResponse.json(
         {
@@ -70,19 +105,56 @@ export async function PATCH(
         { status: 409 }
       );
     }
-    if (user.status === "ACTIVE") {
-      return NextResponse.json(
-        { ok: false, message: "This account is already active." },
-        { status: 409 }
-      );
-    }
 
     if (action === "approve") {
       const admin = createMorrowSupabaseAdminClient();
       const { data, error } = await admin.auth.admin.getUserById(
         user.supabaseUserId
       );
-      if (error || !data.user?.email_confirmed_at) {
+      if (error) {
+        console.error("Supabase could not verify an access request:", {
+          requestId: id,
+          userId: user.id,
+          status: error.status,
+          code: error.code,
+          message: error.message,
+        });
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "Morrow could not confirm email verification right now. Please try again.",
+          },
+          { status: 503 }
+        );
+      }
+
+      if (!data.user) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "This sign-in account could not be found. Ask the person to register again.",
+          },
+          { status: 409 }
+        );
+      }
+
+      if (
+        normalizeMorrowEmail(data.user.email ?? "") !==
+        normalizeMorrowEmail(accessRequest.email)
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "The verified email does not match this access request. Ask the person to register again.",
+          },
+          { status: 409 }
+        );
+      }
+
+      if (!data.user.email_confirmed_at) {
         return NextResponse.json(
           {
             ok: false,
@@ -111,7 +183,9 @@ export async function PATCH(
           reviewedById: session.userId,
         },
       }),
-      prisma.morrowAuthSession.deleteMany({ where: { userId: user.id } }),
+      ...(action === "reject"
+        ? [prisma.morrowAuthSession.deleteMany({ where: { userId: user.id } })]
+        : []),
     ]);
 
     return NextResponse.json({
